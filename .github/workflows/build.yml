@@ -1,0 +1,43 @@
+name: Build Release Candidate
+
+on:
+  push:
+    branches: [ develop ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  artifacts: write
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-release-candidate:
+    name: Build Release APK (Unsigned/Test)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: android-actions/setup-android@v3
+        with:
+          api-level: 36
+          build-tools: '36.0.0'
+      - name: Assemble Release Candidate (Unsigned)
+        run: ./gradlew :app:assembleRelease --stacktrace
+      - name: Upload Release Candidate APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: panther-release-candidate-apk
+          path: app/build/outputs/apk/release/app-release.apk
+          retention-days: 1
+      - name: Verify APK Version
+        run: |
+          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          aapt dump badging $APK_PATH | grep -E "package:|versionCode:|versionName:"

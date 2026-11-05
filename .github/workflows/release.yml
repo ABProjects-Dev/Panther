@@ -1,0 +1,108 @@
+name: Release Official APK
+
+on:
+  push:
+    tags:
+      - 'v*.*.*' # Semantic Versioning: v1.0.0, v1.1.0, etc.
+
+permissions:
+  contents: write
+  packages: write
+  actions: write
+  deployments: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate-tag:
+    name: Validate Tag Format
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Tag Format
+        run: |
+          TAG=${{ github.ref_name }}
+          if [[ ! $TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Tag $TAG does not match Semantic Versioning format vX.Y.Z"
+            exit 1
+          fi
+          echo "Tag $TAG is valid."
+
+  build-and-sign-release:
+    name: Build and Sign Release APK
+    needs: validate-tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      # Secrets must be configured in GitHub Repository Settings
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+      KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: android-actions/setup-android@v3
+        with:
+          api-level: 36
+          build-tools: '36.0.0'
+      - name: Decode Keystore
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > app/release.jks
+          chmod 600 app/release.jks
+      - name: Create Signing Config
+        run: |
+          cat <<EOF > app/signing.properties
+          storeFile=release.jks
+          storePassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          EOF
+      - name: Assemble Signed Release APK
+        run: ./gradlew :app:assembleRelease --stacktrace
+      - name: Verify Signed APK
+        run: |
+          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          aapt dump badging $APK_PATH | grep -E "package:|versionCode:|versionName:"
+          jarsigner -verify -verbose -certs $APK_PATH
+      - name: Upload Release Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: panther-official-release-${{ github.ref_name }}
+          path: app/build/outputs/apk/release/app-release.apk
+          retention-days: 30
+
+  publish-release:
+    name: Create GitHub Release
+    needs: build-and-sign-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Download Signed APK
+        uses: actions/download-artifact@v4
+        with:
+          name: panther-official-release-${{ github.ref_name }}
+          path: release-artifacts
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Panther Release ${{ github.ref_name }}
+          body: |
+            Official release of Panther application.
+            Version: ${{ github.ref_name }}
+            Build Date: ${{ github.event.head_commit.timestamp }}
+          draft: false
+          prerelease: false
+      - name: Upload APK to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-artifacts/app-release.apk
+          tag_name: ${{ github.ref_name }}
