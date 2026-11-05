@@ -1,420 +1,444 @@
-# AGENTS.md — Panther Android Application
+Permanent Project Development Instructions
 
-## 1. Project Identity
+This file defines the permanent development, security, documentation, GitHub, testing, release, and workspace management rules for this project.
 
-Project Name: Panther
+All agents working on this repository must read and follow these instructions before performing any task.
 
-Panther is a modern, offline-first Android application designed for creating, organizing, editing, and managing bodybuilding workout plans.
+1. Core Principles
 
-The application focuses exclusively on workout plan management.
+- Treat this file as the permanent project-wide instruction source.
+- Read and understand the existing project structure before making changes.
+- Preserve existing functionality unless a change is explicitly requested.
+- Avoid unnecessary complexity, dependencies, and architectural changes.
+- Never make assumptions about important requirements.
+- Ask the project owner when an important decision is unclear.
+- Prefer reliable, maintainable, testable, and well-documented solutions.
+- Never claim that an operation succeeded without verification.
 
-Panther is NOT a workout tracking application.
+2. Real-Time Progress Reporting
 
-The primary objective is to provide a clean, professional, reliable, and intuitive environment for users to create and manage their personal workout programs.
-
-All development decisions must respect this product definition.
-
-## 2. Technology Stack
-
-Use the following technologies:
-
-- Programming Language: Kotlin
-- UI Framework: Jetpack Compose
-- Design System: Material 3 with a custom Panther design system
-- Architecture: Clean Architecture with MVVM
-- Database: Room
-- Navigation: Navigation Compose
-- Dependency Injection: Hilt
-- Asynchronous Programming: Kotlin Coroutines and Flow
-- Preferences: DataStore
-- Image Selection: Android Photo Picker
-- Minimum Android SDK: 26 (Android 8.0)
-- Target SDK: Latest stable SDK compatible with the selected development environment.
-
-Use Gradle Kotlin DSL.
-
-Use a centralized version catalog through `gradle/libs.versions.toml`.
-
-Prefer stable library versions. Avoid alpha, beta, or experimental dependencies unless absolutely necessary.
-
-## 3. Architecture Rules
-
-Follow a modular, maintainable, and scalable architecture.
-
-Use clear separation of concerns:
-
-- Presentation Layer
-- Domain Layer
-- Data Layer
-
-Recommended package structure:
-
-```text
-com.panther.app/
-│
-├── PantherApplication.kt
-│
-├── core/
-│   ├── navigation/
-│   ├── designsystem/
-│   ├── theme/
-│   ├── common/
-│   ├── extensions/
-│   └── util/
-│
-├── data/
-│   ├── local/
-│   │   ├── database/
-│   │   ├── dao/
-│   │   └── entity/
-│   ├── repository/
-│   └── mapper/
-│
-├── domain/
-│   ├── model/
-│   ├── repository/
-│   └── usecase/
-│
-├── feature/
-│   ├── home/
-│   ├── programs/
-│   ├── history/
-│   ├── profile/
-│   ├── programeditor/
-│   └── settings/
-│
-└── di/
-```
-
-This is the recommended logical structure. Physical Gradle modules may be introduced when they provide meaningful architectural benefits.
-
-Do not create unnecessary abstractions or excessive modules.
-
-## 4. Product Scope and Restrictions
-
-The following features are included in the MVP:
-
-### User Profile
-
-- Name
-- Profile image
-- Age
-- Height in centimeters
-- Weight in kilograms
-- Editing profile information
-
-### Workout Programs
-
-- Create multiple workout programs.
-- Edit existing programs.
-- Delete programs.
-- Archive programs.
-- Activate and deactivate programs.
-- Store program creation or received date.
-- Configure the number of training days.
-- Customize training day names.
-- Reorder training days.
-- Add, edit, remove, and reorder exercises.
-
-### Exercises
-
-Each exercise must support:
-
-- Exercise name
-- Number of sets
-- Target type: Repetitions or Duration
-- Individual target value for each set.
-
-Duration must support minutes and seconds.
-
-Each set must be represented by its own independent target value.
-
-### Dashboard
-
-Display:
-
-- User name
-- Active workout program
-- Number of training days
-- Number of exercises
-- Recent workout programs
-- Quick access to creating a program
-
-### Main Navigation
-
-The application must have four primary destinations:
-
-1. Home
-2. Programs
-3. History
-4. Profile
-
-Settings can be accessed from the appropriate screen.
-
-## 5. Explicitly Excluded Features
-
-NEVER implement the following in the MVP unless explicitly requested:
-
-- Workout session tracking
-- Recording completed sets
-- Recording actual repetitions
-- Recording lifted weights
-- Rest timers
-- Workout start or finish functionality
-- Performance analytics
-- Progress charts
-- Exercise video library
-- Exercise tutorial images
-- Coach and athlete accounts
-- Online accounts
-- Cloud synchronization
-- Social networking
-
-Do not introduce features that conflict with the product definition.
-
-## 6. Business Rules
-
-These rules must always be respected:
-
-1. A user can create multiple workout programs.
-2. Only one program can be active at a time.
-3. Activating a new program must deactivate the previous active program.
-4. Previous programs must remain available.
-5. Editing a program modifies the existing program.
-6. Automatic program versioning is not supported.
-7. Archived programs must remain distinguishable from active and inactive programs.
-8. Deleting important data must require user confirmation.
-9. Program days and exercises must support custom ordering.
-10. Set targets must be stored independently.
-
-Do not confuse target values with actual workout performance.
-
-## 7. Database Rules
-
-Use Room as the local database.
-
-The application must work completely offline.
-
-Recommended database entities:
-
-- UserProfileEntity
-- WorkoutProgramEntity
-- TrainingDayEntity
-- ExerciseEntity
-- ExerciseSetEntity
-
-Use proper foreign keys and relationships.
-
-Recommended relationships:
-
-- One program has multiple training days.
-- One training day has multiple exercises.
-- One exercise has multiple sets.
-
-Use stable primary keys and appropriate indexes.
-
-Use database transactions for operations that modify multiple related records.
-
-Enforce the single-active-program rule at the repository or domain level, preferably through a transactional operation.
-
-Avoid storing relational data in unnecessarily complex serialized strings.
-
-Database changes must be handled through proper Room migrations.
-
-Never use destructive migrations in production code.
-
-## 8. UI and Design Guidelines
-
-Panther must follow a modern, professional, minimal, Dark First design language.
-
-Primary color palette:
-
-| Color | Hex |
-| --- | --- |
-| Panther Lime | #C6F432 |
-| Background | #101820 |
-| White | #FFFFFF |
-| Surface | #252F38 |
-| Secondary Gray | #8D99A6 |
-
-Design requirements:
-
-- Dark theme is the default.
-- Light theme must also be supported.
-- Preserve Panther's visual identity in both themes.
-- Use consistent spacing and typography.
-- Use rounded cards and clean layouts.
-- Avoid unnecessary visual clutter.
-- Use subtle animations.
-- Provide clear visual hierarchy.
-- Use accessible touch targets.
-- Support Persian and RTL layouts.
-- Avoid hardcoded UI strings.
-- Put all user-facing text in string resources.
-- Use reusable Compose components.
-
-The UI should feel like a premium fitness management application.
-
-Do not use generic Material 3 styling without adapting it to Panther's visual identity.
-
-## 9. Localization
-
-Persian is the primary application language.
+All user-visible progress reports must be written in Persian.
 
 Requirements:
 
-- Proper RTL layout.
-- Persian UI strings.
-- Correct alignment of text, icons, and navigation.
-- Appropriate Persian typography.
-- Support for localized dates and numbers where applicable.
+- Use right-to-left (RTL) formatting.
+- Provide concise reports at meaningful development milestones.
+- Report completed operations, current activities, discovered problems, and decisions requiring approval.
+- Clearly distinguish completed work from ongoing work.
+- Never fabricate progress, test results, build results, or deployment status.
+- Do not expose passwords, private keys, tokens, or other sensitive information in progress reports.
 
-Keep the application architecture localization-ready.
+The final report must also be written in Persian and formatted RTL.
 
-Do not hardcode Persian strings directly inside composable functions.
+3. Documentation Language Policy
 
-## 10. Offline-First Requirements
+All source-controlled technical documentation must be written in English.
 
-The application must not require:
+This includes:
 
-- Internet access
-- Registration
-- Login
-- Online authentication
-- Remote APIs
-- Cloud storage
+- [README.md](http://README.md)
+- [AGENTS.md](http://AGENTS.md)
+- [ARCHITECTURE.md](http://ARCHITECTURE.md)
+- [REQUIREMENTS.md](http://REQUIREMENTS.md)
+- [CHANGELOG.md](http://CHANGELOG.md)
+- [RELEASES.md](http://RELEASES.md)
+- [API.md](http://API.md)
+- Technical reports
+- Code comments
+- Commit messages
+- Branch names
+- GitHub Issues
+- Pull Requests
+- Release notes
 
-All essential data must be stored locally.
+Application interface language is independent of documentation language and must follow the project requirements.
 
-Do not add the INTERNET permission unless explicitly required and approved.
+All user-facing progress and final reports must remain in Persian.
 
-## 11. Data Backup and Export
+4. Project Structure and Documentation
 
-The planned backup system must support:
+Maintain a clean, logical, and maintainable repository structure.
 
-- JSON export.
-- JSON import.
-- Backup file validation.
-- Safe restoration.
-- PDF export of workout programs.
-- User-selected file locations using Android Storage Access Framework.
+Recommended documentation structure:
 
-Import operations must validate the complete backup before modifying existing data.
+```text
+project/
+├── AGENTS.md
+├── README.md
+├── CHANGELOG.md
+├── RELEASES.md
+├── docs/
+│   ├── REQUIREMENTS.md
+│   ├── ARCHITECTURE.md
+│   ├── PROJECT_PLAN.md
+│   └── API.md
+├── src/
+└── ...
 
-Database restoration must be atomic whenever possible.
+```
 
-Never overwrite user data without appropriate confirmation.
+Adapt the structure to the selected framework and project requirements.
 
-## 12. Code Quality
+Rules:
 
-Follow these standards:
+- Do not create unnecessary documentation files.
+- Keep documentation synchronized with actual implementation.
+- Update relevant documentation whenever architecture, requirements, or behavior changes.
+- Never document unimplemented features as completed.
+- Do not duplicate the same information across multiple documents without a clear reason.
 
-- Write clean, readable Kotlin.
-- Prefer immutable data structures.
-- Use StateFlow for UI state where appropriate.
-- Use sealed interfaces or classes for UI states and results.
-- Avoid business logic inside Composable functions.
-- Keep composables focused and reusable.
-- Use dependency injection consistently.
+5. GitHub as the Primary Source of Truth
+
+GitHub is the primary and authoritative platform for:
+
+- Source code
+- Project documentation
+- Version history
+- Branches and commits
+- Issues and Pull Requests
+- Tags
+- Releases
+- Build artifacts
+
+Do not use Google Drive or other cloud storage services for project source code, documentation, development files, or release management.
+
+The repository must remain the authoritative source of project history.
+
+Rules:
+
+- Keep the repository organized.
+- Never upload unnecessary build caches or temporary files.
+- Never commit credentials or signing keys.
+- Keep release artifacts separate from the source-code history whenever possible.
+- Verify repository changes after pushing.
+
+6. Git and Branch Management
+
+Use the following branch strategy:
+
+- `main`: stable and approved code.
+- `feature/*`: new functionality.
+- `fix/*`: bug fixes.
+- `refactor/*`: internal code improvements.
+- `docs/*`: documentation-only changes.
+
+Rules:
+
+- Keep commits small and logically separated.
+- Use meaningful English commit messages.
+- Follow Conventional Commits where practical.
+
+Examples:
+
+```text
+feat: add user profile screen
+fix: resolve application startup crash
+refactor: simplify database repository
+docs: update installation instructions
+
+```
+
+- Do not commit unfinished or untested work to `main`.
+- Do not rewrite shared Git history without explicit approval.
+- Do not force-push to protected or shared branches.
+- Do not delete important branches without approval.
+
+For small projects, temporary feature branches are sufficient. Do not introduce unnecessary branch complexity.
+
+7. Pull Request and Merge Policy
+
+Use Pull Requests for significant changes.
+
+Every Pull Request should contain:
+
+- A clear English title.
+- A description of the changes.
+- Relevant Issue references when applicable.
+- Testing information.
+- Potential risks or breaking changes.
+
+Rules:
+
+- Review changes before merging.
+- Resolve important conflicts carefully.
+- Never silently discard existing functionality.
+- Obtain project owner approval before merging significant architectural or behavior-changing changes into `main`.
+- Do not merge unverified changes.
+
+8. Issue and Task Management
+
+Use GitHub Issues to track substantial tasks and bugs when appropriate.
+
+Issue descriptions should include:
+
+- Problem or objective
+- Expected behavior
+- Actual behavior when reporting a bug
+- Steps to reproduce when applicable
+- Acceptance criteria
+
+Avoid creating unnecessary Issues for trivial internal operations.
+
+Keep task status accurate.
+
+9. Version Management
+
+Use Semantic Versioning:
+
+```text
+MAJOR.MINOR.PATCH
+
+```
+
+Examples:
+
+- `1.0.0`: first stable release.
+- `1.1.0`: backward-compatible feature addition.
+- `1.1.1`: backward-compatible bug fix.
+- `2.0.0`: incompatible changes.
+
+Rules:
+
+- Keep version information consistent across relevant project files.
+- Maintain [CHANGELOG.md](http://CHANGELOG.md).
+- Use Git tags for releases.
+- Never reuse an existing release tag for a different version.
+- Never delete historical releases without explicit approval.
+
+10. Build and Automated Testing
+
+Before considering a task complete:
+
+- Run relevant automated tests.
+- Check for compilation errors.
+- Run static analysis or lint checks when available.
+- Verify important application flows.
+- Check for regressions.
+- Confirm the final build configuration.
+
+For Android projects:
+
+- Verify Debug builds.
+- Verify Release builds when release configuration is available.
+- Check application ID and version information.
+- Verify signing configuration without exposing secrets.
+- Test installation and startup where possible.
+
+Never report a successful build unless the build actually completed successfully.
+
+If a test cannot be performed, clearly explain why.
+
+11. GitHub Actions and Release Automation
+
+Use GitHub Actions when automation provides meaningful value.
+
+Possible workflows include:
+
+- Automated tests.
+- Static analysis.
+- Debug builds.
+- Release builds.
+- Artifact uploads.
+- Release preparation.
+
+Rules:
+
+- Use GitHub Secrets for required credentials.
+- Never hardcode sensitive values in workflow files.
+- Apply least-privilege permissions.
+- Avoid unnecessary workflow executions.
+- Keep workflow files understandable and maintainable.
+- Verify workflow results before reporting success.
+
+Do not publish a stable release automatically without project owner approval.
+
+12. GitHub Releases and Build Artifacts
+
+Use GitHub Releases for approved stable application releases.
+
+For Android projects, release artifacts may include:
+
+- APK
+- AAB
+- Relevant checksums
+- Release notes
+
+Rules:
+
+- Use version tags such as `v1.0.0`.
+- Include accurate release notes.
+- Upload only verified build artifacts.
+- Preserve historical releases.
+- Never upload signing keys, passwords, or private credentials.
+- Do not publish test builds as stable releases unless explicitly requested.
+
+13. Security and Sensitive Information
+
+Security is mandatory throughout the project lifecycle.
+
+Never commit:
+
+- Keystore files
+- Private keys
+- Passwords
+- API secrets
+- Access tokens
+- Personal credentials
+- Sensitive configuration files
+
+Use GitHub Secrets for credentials required by GitHub Actions.
+
+Android signing requirements:
+
+- Keep release signing keys outside the repository.
+- Maintain a secure, encrypted backup of the original keystore.
+- Never rely on a temporary agent workspace as the only location of a signing key.
+- Preserve the original keystore and its required credentials.
+- Do not generate a replacement signing key for an existing published application without explicit authorization.
+- Do not expose signing passwords in logs or documentation.
+- Verify signing configuration before producing a stable release.
+
+If sensitive information is accidentally committed:
+
+- Stop further exposure.
+- Notify the project owner.
+- Follow an appropriate credential rotation and repository remediation process.
+- Do not assume deleting the file from the latest commit removes it from Git history.
+
+14. Code Quality and Application Stability
+
+All implementation work must prioritize:
+
+- Readability
+- Maintainability
+- Reliability
+- Performance
+- Security
+- Accessibility where applicable
+- Consistent architecture
+
+Rules:
+
+- Follow the conventions of the selected language and framework.
+- Avoid unnecessary code duplication.
+- Use clear names for classes, methods, and variables.
 - Handle errors explicitly.
 - Validate user inputs.
-- Avoid unnecessary dependencies.
-- Avoid duplicated code.
-- Avoid unexplained magic numbers.
-- Use meaningful naming conventions.
-- Document complex business rules.
+- Avoid introducing breaking changes without authorization.
+- Remove obsolete code only after verifying it is no longer required.
+- Do not introduce dependencies without a clear technical reason.
 
-Do not use deprecated APIs when stable alternatives exist.
+15. Change and Update Management
 
-## 13. Jetpack Compose Guidelines
+When implementing a requested update:
 
-- Prefer stateless reusable composables.
-- Use ViewModels for screen-level state.
-- Collect flows with lifecycle-aware APIs.
-- Keep navigation separate from business logic.
-- Use Material 3 components as building blocks.
-- Create reusable Panther-specific components.
-- Use stable keys for dynamic lists.
-- Preserve UI state when navigating where appropriate.
+- Work from the latest approved project state.
+- Inspect the current implementation before modifying it.
+- Do not rebuild the project from an outdated version.
+- Identify the affected components and dependencies.
+- Preserve unrelated functionality.
+- Update tests and documentation where necessary.
+- Verify the changes before committing.
 
-## 14. Testing
+For bug fixes:
 
-Write tests for important business logic.
+- Identify the root cause.
+- Avoid superficial workarounds when a proper fix is possible.
+- Add regression tests when appropriate.
+- Verify that the issue is actually resolved.
 
-Prioritize:
+16. Data Preservation and Workspace Cleanup
 
-- Program activation rules.
-- Program creation and editing.
-- Program deletion.
-- Archive behavior.
-- Exercise and set management.
-- Input validation.
-- Backup validation.
-- Repository operations.
+Workspace cleanup is required at the end of each completed task.
 
-Use unit tests for domain logic and database tests for Room behavior.
+Before deleting any file:
 
-Do not consider a feature complete without verifying its basic behavior.
+1. Determine whether the file may be required in future development.
+2. Check whether it exists in GitHub or another authorized project source.
+3. Determine whether it can be reliably regenerated or downloaded.
+4. Preserve important files that cannot be recovered.
+5. Never delete the only copy of essential project data.
 
-## 15. Git and Documentation Rules
+Important files include:
 
-- Keep commits focused and descriptive.
-- Do not commit generated build artifacts.
-- Do not commit local secrets.
-- Maintain a useful README.md.
-- Document architectural decisions.
-- Keep documentation synchronized with implementation.
-- Never silently remove existing functionality.
-- Never overwrite unrelated user changes.
+- Source code
+- Project documentation
+- Configuration files
+- Database migration files
+- Signing keys
+- Required certificates
+- Uncommitted work
+- Essential test resources
 
-## 16. Agent Working Rules
+After verification:
 
-Before modifying the project:
+- Remove unnecessary temporary files.
+- Remove safe-to-delete build caches.
+- Remove redundant generated artifacts.
+- Keep the workspace organized and ready for the next task.
 
-1. Inspect the repository.
-2. Read this AGENTS.md file.
-3. Read the existing documentation.
-4. Understand the current architecture.
-5. Identify affected files.
-6. Propose a clear implementation plan when the task is substantial.
+Never delete essential files merely to reduce workspace size.
 
-During development:
+17. Actions Requiring Project Owner Approval
 
-- Make focused changes.
-- Respect existing conventions.
-- Avoid unnecessary refactoring.
-- Do not introduce unrelated features.
-- Do not generate placeholder implementations for features that should work.
-- Do not claim that a build or test succeeded unless it was actually executed successfully.
+Obtain explicit approval before:
 
-After implementation:
+- Publishing a stable release.
+- Deleting a repository.
+- Rewriting shared Git history.
+- Replacing an existing signing key.
+- Changing the application ID of an established application.
+- Performing destructive database migrations.
+- Removing important application functionality.
+- Introducing major architectural changes.
+- Deleting important project data.
+- Making irreversible changes to production services.
 
-1. Run the relevant Gradle build tasks.
-2. Run relevant tests.
-3. Fix compilation errors.
-4. Report changed files.
-5. Report completed functionality.
-6. Report remaining issues and limitations.
+Do not interpret silence as approval.
 
-If a requirement is ambiguous, ask before making a major architectural or product decision.
+18. Final Delivery Checklist
 
-## 17. Definition of Done
+Before completing a task, verify:
 
-A task is complete only when:
+- Requested functionality is implemented.
+- Existing functionality has not been unintentionally broken.
+- Relevant tests have been executed.
+- Build results have been verified when applicable.
+- Documentation has been updated.
+- Git changes are organized.
+- No secrets or sensitive files were committed.
+- Important files have been preserved.
+- Temporary files have been safely cleaned up.
+- The final report accurately describes the work.
 
-- The implementation follows this document.
-- The code compiles.
-- Relevant tests pass.
-- Existing functionality remains intact.
-- UI follows Panther's design system.
-- Data is persisted correctly.
-- No excluded MVP functionality has been introduced.
-- Documentation is updated when necessary.
+The final report must be written in Persian and include:
 
-### Final Principle
+1. Completed work.
+2. Modified or created files.
+3. GitHub changes.
+4. Tests performed and their actual results.
+5. Build status.
+6. Known issues and limitations.
+7. Remaining tasks.
+8. Any required project owner decisions.
+9. Project-Specific Instructions
 
-Panther is a focused workout program management application.
+Project-specific requirements may be added to this file or to dedicated documentation.
 
-Simplicity, reliability, offline functionality, maintainability, and user experience are more important than adding unnecessary features.
+When project-specific instructions conflict with general recommendations:
 
-Every implementation decision must support this principle.
+- Follow explicitly approved project requirements.
+- Preserve security requirements.
+- Ask the project owner when the conflict cannot be resolved safely.
+
+Do not assume that instructions from another project apply to this repository.
+
+20. Final Operating Principle
+
+Work carefully, preserve project history, protect sensitive information, and keep the repository maintainable.
+
+Prefer verified results over fast but unreliable changes.
+
+Never sacrifice project integrity, data safety, or release compatibility for convenience.
+
+Always report honestly, work transparently, and obtain approval before irreversible or sensitive operations.
