@@ -1,29 +1,46 @@
-# Architecture
+# Panther Project Architecture
 
-## Approach
+## Overview
+The Panther project is an Android application built with Kotlin, Jetpack Compose, and Hilt. It follows a clean architecture pattern with Domain, Data, and Presentation layers.
 
-Panther uses a single Android application module with logical boundaries intended to support later extraction when warranted. Keep dependencies pointing inward: presentation depends on domain contracts; data implements those contracts. Do not create layers or modules without a concrete use.
+## Layers
 
-## Layers and data flow
+### 1. Presentation Layer
+- **Components**: Composable screens, ViewModels, Navigation.
+- **Technology**: Jetpack Compose, Hilt, Kotlin Coroutines.
+- **Location**: `app/src/main/java/com/panther/app/feature/`, `app/src/main/java/com/panther/app/core/`.
 
-- **Presentation:** Compose screens and reusable design-system components; screen ViewModels expose immutable UI state via StateFlow and handle events. Collect flows with lifecycle-aware APIs. Navigation is separate from business logic.
-- **Domain:** models, repository interfaces and focused use cases for business rules, independent of Android UI and persistence details.
-- **Data:** Room entities/DAOs and mappers implement domain repository interfaces; DataStore holds preferences. Expose observable data using Flow. All essential data remains local.
+### 2. Domain Layer
+- **Components**: Use cases, Models, Validation logic.
+- **Technology**: Kotlin, Coroutines.
+- **Location**: `app/src/main/java/com/panther/app/domain/`.
 
-A user event goes from a composable to a ViewModel, through a use case or domain repository contract to the data implementation. Repository Flow updates return through the ViewModel to the UI. Suspend functions and coroutines handle asynchronous work.
+### 3. Data Layer
+- **Components**: Repository, DAO (Room), Backup JSON codec, DataStore.
+- **Technology**: Room, KSP, DataStore, Android SDK 36.
+- **Location**: `app/src/main/java/com/panther/app/data/`.
 
-## Dependency injection
+## Build System
+- **Gradle**: Version 8.11.1
+- **Android Gradle Plugin**: Integrated via `libs.plugins`
+- **Kotlin**: Version 17
+- **Compose**: Enabled
+- **SDK**: Compile/Target 36, Min 26
 
-Hilt is initialized by `PantherApplication` and `MainActivity` is an Android entry point. Hilt binds the Room repository and provides a singleton database. Use cases are constructor-injected; the activity owns the current feature ViewModels.
+## GitHub Actions Architecture
+- **CI**: Build, Test, Lint (ci.yml)
+- **Security**: Dependency/License scan (security.yml)
+- **Build**: Release Candidate (build.yml)
+- **Release**: Signed Official Release (release.yml)
+- **Cleanup**: Artifact management (cleanup.yml)
 
-## Database strategy
+## Security (Rule 13)
+- Keystore and Secrets managed via GitHub Secrets.
+- No sensitive data in repository.
 
-Room version 1 defines profile, program, training day, exercise and per-set target entities, with foreign keys, cascading deletion and indexes. The repository uses transactions for activation, reordering and replacement of sets; it validates names and targets before writing. Schema export is configured at app/schemas; the first schema must be generated and committed by a successful build. Future schema versions need explicit migrations; never use destructive migration. Database tests cover activation, ordering, profile and relational behavior but have not yet run in this environment.
+## Maintenance (Rule 16)
+- Artifacts cleaned daily (cleanup.yml).
+- Workspace cleanup required after tasks.
 
-## Backup and document export
-
-The versioned JSON codec converts a backup file into immutable domain backup models and validates the full hierarchy before any database write. Restore clears and recreates the local dataset inside a Room transaction; the UI requires explicit confirmation because the operation replaces current data. Profile images are embedded as bounded Base64 data rather than exporting an app-private file path. SAF owns all user-selected file locations. PDF export renders only planned day, exercise and per-set targets; it does not represent actual workout performance.
-
-## Navigation and localization
-
-A Navigation Compose host owns the four primary destinations, program editor and settings. Bottom navigation uses saved state and single-top navigation. The current UI contains Persian resources and explicitly uses RTL because Persian is the only supported UI language for now. Revisit direction selection when additional languages are introduced. The theme defaults to dark and supports light and system settings persisted in DataStore.
+Last Updated: 2026-11-05
+Language: English (Rule 3)
