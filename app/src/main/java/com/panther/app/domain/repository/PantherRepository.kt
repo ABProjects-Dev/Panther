@@ -22,7 +22,10 @@ interface PantherRepository {
     suspend fun reorderDays(programId: Long, ids: List<Long>)
     suspend fun addExercise(dayId: Long, name: String, order: Int): Long
     suspend fun renameExercise(id: Long, name: String)
+    suspend fun saveExercise(dayId: Long, exerciseId: Long?, name: String, order: Int, sets: List<ExerciseSet>)
     suspend fun deleteExercise(id: Long)
     suspend fun reorderExercises(dayId: Long, ids: List<Long>)
     suspend fun replaceSets(exerciseId: Long, sets: List<ExerciseSet>)
+    suspend fun createBackup(): PantherBackup
+    suspend fun restoreBackup(backup: PantherBackup)
 }

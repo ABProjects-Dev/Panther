@@ -12,4 +12,39 @@
     <string name="settings">تنظیمات</string><string name="theme">ظاهر برنامه</string><string name="dark">تیره</string><string name="light">روشن</string><string name="system">مطابق سیستم</string><string name="back">بازگشت</string>
     <string name="error_generic">عملیات انجام نشد. لطفاً دوباره تلاش کنید.</string><string name="error_name">نام باید بین ۱ تا ۱۰۰ نویسه باشد.</string><string name="error_profile">نام و مقادیر پروفایل را بررسی کنید.</string><string name="loading">در حال بارگذاری…</string><string name="close">بستن</string>
     <string name="photo_selected">تصویر جدید انتخاب شد.</string>
+    <string name="training_days">روزهای تمرین</string>
+    <string name="add_day">افزودن روز</string>
+    <string name="day_name">نام روز تمرین</string>
+    <string name="edit_day">ویرایش روز تمرین</string>
+    <string name="confirm_delete_day">این روز و همهٔ حرکت‌ها و هدف‌های ست‌های آن حذف می‌شود. ادامه می‌دهید؟</string>
+    <string name="add_exercise">افزودن حرکت</string>
+    <string name="edit_exercise">ویرایش حرکت</string>
+    <string name="exercise_name">نام حرکت</string>
+    <string name="target_type">نوع هدف</string>
+    <string name="repetitions">تکرار</string>
+    <string name="duration">مدت‌زمان</string>
+    <string name="set_count">%1$d ست</string>
+    <string name="set_count_label">تعداد ست‌ها</string>
+    <string name="set_repetitions">تعداد تکرار این ست</string>
+    <string name="set_duration">دقیقه:ثانیه برای این ست</string>
+    <string name="individual_targets_hint">هدف هر ست جداگانه ذخیره می‌شود؛ این مقادیر برنامه‌ریزی هستند، نه ثبت عملکرد.</string>
+    <string name="error_exercise">نام، تعداد ست‌ها و هدف هر ست را بررسی کنید.</string>
+    <string name="confirm_delete_exercise">این حرکت و هدف‌های همهٔ ست‌های آن حذف می‌شود. ادامه می‌دهید؟</string>
+    <string name="program_not_found">برنامه پیدا نشد.</string>
+    <string name="export_pdf">خروجی PDF</string>
+    <string name="pdf_plan_only">این سند فقط هدف‌های برنامه‌ریزی‌شده را نشان می‌دهد.</string>
+    <string name="pdf_repetitions">%1$d تکرار</string>
+    <string name="pdf_duration">%1$d دقیقه و %2$d ثانیه</string>
+    <string name="pdf_set_line">ست %1$d: %2$s</string>
+    <string name="backup_section">پشتیبان‌گیری و بازیابی</string>
+    <string name="backup_description">پشتیبان شامل پروفایل، برنامه‌ها، روزها، حرکت‌ها و هدف‌های هر ست است و فقط روی دستگاه شما ذخیره می‌شود.</string>
+    <string name="export_backup">ذخیرهٔ نسخهٔ پشتیبان</string>
+    <string name="import_backup">بازیابی نسخهٔ پشتیبان</string>
+    <string name="backup_exported">نسخهٔ پشتیبان ذخیره شد.</string>
+    <string name="backup_imported">نسخهٔ پشتیبان بازیابی شد.</string>
+    <string name="backup_invalid">فایل پشتیبان معتبر نیست یا با این نسخه سازگار نیست.</string>
+    <string name="confirm_import_title">جایگزینی اطلاعات؟</string>
+    <string name="confirm_import">این فایل شامل %1$d برنامه است. بازیابی، همهٔ اطلاعات فعلی برنامه را جایگزین می‌کند.</string>
+    <string name="import_replace">جایگزینی و بازیابی</string>
+    <string name="pdf_exported">فایل PDF ذخیره شد.</string>
 </resources>

@@ -1,5 +1,6 @@
 package com.panther.app.core.navigation
 
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
@@ -15,7 +16,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -47,7 +47,7 @@ fun PantherNavigation(programs: ProgramsViewModel, profile: ProfileViewModel, se
             NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                 destinations.forEach { destination ->
                     NavigationBarItem(
-                        selected = route == destination.route || (destination.route == "programs" && (route?.startsWith("programs?") == true || route == "details/{id}")),
+                        selected = route == destination.route || (destination.route == "programs" && (route?.startsWith("programs") == true || route == "editor/{id}")),
                         onClick = {
                             navController.navigate(destination.route) {
                                 popUpTo(navController.graph.findStartDestination().id) { saveState = true }
@@ -64,16 +64,16 @@ fun PantherNavigation(programs: ProgramsViewModel, profile: ProfileViewModel, se
         },
     ) { padding ->
         NavHost(navController = navController, startDestination = "home", modifier = Modifier.padding(padding)) {
-            composable("home") { HomeScreen(programs, profile, onCreate = { navController.navigate("programs?create=true") }, onDetails = { navController.navigate("details/$it") }) }
+            composable("home") { HomeScreen(programs, profile, onCreate = { navController.navigate("programs?create=true") }, onDetails = { navController.navigate("editor/$it") }) }
             composable("programs?create={create}", arguments = listOf(navArgument("create") { type = NavType.BoolType; defaultValue = false })) { backStack ->
-                ProgramsScreen(programs, initiallyCreate = backStack.arguments?.getBoolean("create") == true, onDetails = { navController.navigate("details/$it") })
+                ProgramsScreen(programs, initiallyCreate = backStack.arguments?.getBoolean("create") == true, onDetails = { navController.navigate("editor/$it") })
             }
-            composable("history") { HistoryScreen(programs) { navController.navigate("details/$it") } }
+            composable("history") { HistoryScreen(programs) { navController.navigate("editor/$it") } }
             composable("profile") { ProfileScreen(profile) { navController.navigate("settings") } }
             composable("settings") { SettingsScreen(settings) { navController.popBackStack() } }
-            composable("details/{id}") { backStack ->
+            composable("editor/{id}") { backStack ->
                 val id = backStack.arguments?.getString("id")?.toLongOrNull()
-                if (id != null) ProgramDetailsScreen(programs, id) { navController.popBackStack() }
+                if (id != null) ProgramEditorScreen(programs, settings, id) { navController.popBackStack() }
             }
         }
     }
