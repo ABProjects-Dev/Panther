@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-data class DataState<T>(val value: T, val loading: Boolean = true, val error: Boolean = false)
+data class DataState<T>(val value: T, val loading: Boolean = true, val error: Boolean = false, val errorMessage: String? = null)
 
 private suspend fun cleanupProfileImages(context: Context, keepUri: String?) {
     withContext(Dispatchers.IO) {
@@ -61,7 +61,7 @@ class ProgramsViewModel @Inject constructor(
     private val archiveProgram: ArchiveWorkoutProgramUseCase,
 ) : ViewModel() {
     val programs = observePrograms().map { DataState(it, loading = false) }
-        .catch { emit(DataState(emptyList(), loading = false, error = true)) }
+        .catch { e -> emit(DataState(emptyList(), loading = false, error = true, errorMessage = e.localizedMessage)) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DataState(emptyList()))
     private val _error = MutableStateFlow(false)
     val error = _error.asStateFlow()
@@ -83,12 +83,13 @@ class ProgramsViewModel @Inject constructor(
     fun reorderExercises(dayId: Long, ids: List<Long>) = execute { repository.reorderExercises(dayId, ids) }
     fun days(id: Long) = repository.observeDays(id)
         .map { DataState(it, loading = false) }
-        .catch { emit(DataState(emptyList(), loading = false, error = true)) }
+        .catch { e -> emit(DataState(emptyList(), loading = false, error = true, errorMessage = e.localizedMessage)) }
     fun exercises(dayId: Long) = repository.observeExercises(dayId)
         .map { DataState(it, loading = false) }
-        .catch { emit(DataState(emptyList(), loading = false, error = true)) }
+        .catch { e -> emit(DataState(emptyList(), loading = false, error = true, errorMessage = e.localizedMessage)) }
     fun sets(exerciseId: Long) = repository.observeSets(exerciseId)
-        .catch { emit(emptyList()) }
+        .map { DataState(it, loading = false) }
+        .catch { e -> emit(DataState(emptyList(), loading = false, error = true, errorMessage = e.localizedMessage)) }
 }
 
 @HiltViewModel
@@ -98,7 +99,7 @@ class ProfileViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
     val profile = observeProfile().map { DataState(it, loading = false) }
-        .catch { emit(DataState(null, loading = false, error = true)) }
+        .catch { e -> emit(DataState(null, loading = false, error = true, errorMessage = e.localizedMessage)) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DataState<UserProfile?>(null))
     private val _error = MutableStateFlow(false)
     val error = _error.asStateFlow()
@@ -113,8 +114,9 @@ class ProfileViewModel @Inject constructor(
                         val directory = File(context.filesDir, "profile_images").apply { mkdirs() }
                         val output = File(directory, "${UUID.randomUUID()}.image")
                         try {
-                            val input = requireNotNull(context.contentResolver.openInputStream(selectedImage))
-                            input.use { source -> output.outputStream().use { sink ->
+                val input = context.contentResolver.openInputStream(selectedImage)
+                if (input == null) throw IllegalArgumentException("Invalid image URI")
+                input.use { source -> output.outputStream().use { sink ->
                                 val buffer = ByteArray(8_192)
                                 var total = 0
                                 while (true) {
@@ -163,14 +165,16 @@ class SettingsViewModel @Inject constructor(
     fun exportBackup(uri: Uri) = runOperation(R.string.backup_exported) {
         val snapshot = repository.createBackup()
         val imageBase64 = snapshot.profile?.profileImageUri?.let { imageUri -> withContext(Dispatchers.IO) {
-            val input = requireNotNull(context.contentResolver.openInputStream(Uri.parse(imageUri)))
+            val input = context.contentResolver.openInputStream(Uri.parse(imageUri))
+            if (input == null) throw IllegalArgumentException("Invalid profile image URI")
             val imageBytes = input.use { it.readLimited(PantherBackup.MAX_PROFILE_IMAGE_BYTES + 1) }
             require(imageBytes.isNotEmpty() && imageBytes.size <= PantherBackup.MAX_PROFILE_IMAGE_BYTES) { "Profile image exceeds backup limit" }
             android.util.Base64.encodeToString(imageBytes, android.util.Base64.NO_WRAP)
         } }
         val json = withContext(Dispatchers.IO) { PantherBackupJson.encode(snapshot.copy(profile = snapshot.profile?.copy(profileImageUri = null), profileImageBase64 = imageBase64)) }
         withContext(Dispatchers.IO) {
-            val output = requireNotNull(context.contentResolver.openOutputStream(uri, "wt"))
+            val output = context.contentResolver.openOutputStream(uri, "wt")
+            if (output == null) throw IllegalArgumentException("Invalid export URI")
             output.bufferedWriter(Charsets.UTF_8).use { it.write(json) }
         }
     }
@@ -179,8 +183,9 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val candidate = withContext(Dispatchers.IO) {
-                    val input = requireNotNull(context.contentResolver.openInputStream(uri))
-                    val bytes = input.use { it.readLimited(PantherBackup.MAX_BACKUP_BYTES + 1) }
+            val input = context.contentResolver.openInputStream(uri)
+            if (input == null) throw IllegalArgumentException("Invalid import URI")
+            val bytes = input.use { it.readLimited(PantherBackup.MAX_BACKUP_BYTES + 1) }
                     require(bytes.size <= PantherBackup.MAX_BACKUP_BYTES) { "Backup too large" }
                     PantherBackupJson.decode(bytes.toString(Charsets.UTF_8))
                 }
@@ -220,7 +225,8 @@ class SettingsViewModel @Inject constructor(
         val backup = repository.createBackup()
         val program = backup.programs.firstOrNull { it.originalId == programId } ?: error("Program not found")
         withContext(Dispatchers.IO) {
-            val output = requireNotNull(context.contentResolver.openOutputStream(uri, "wt"))
+            val output = context.contentResolver.openOutputStream(uri, "wt")
+            if (output == null) throw IllegalArgumentException("Invalid export URI")
             output.use { ProgramPdfExporter.write(context, program, it) }
         }
     }
