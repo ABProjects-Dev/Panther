@@ -58,3 +58,9 @@ On Windows use `gradlew.bat`. Alternatively open the root directory in Android S
 The initial implementation includes the four-destination shell, dashboard, program creation/rename/activation/deactivation/archive/delete and basic details, local profile editing with Photo Picker, and persisted theme selection. Room models support days, exercises and independent per-set targets; day/exercise editing UI is not implemented yet. Program history is a list of programs, not workout tracking. Backup, import and PDF export are not implemented. Android automatic backup remains disabled pending a deliberate backup strategy.
 
 **Verification is pending:** the current development environment has no JDK or Android SDK, so the implementation, build and tests have not been verified. Room schema export is configured; commit the generated schema after the first successful build. See the roadmap for follow-up work.
+
+## GitHub Actions
+
+Android CI runs on pull requests, pushes to any branch, and manual dispatch. It builds a debug APK, runs unit tests and lint, and runs instrumented tests on an API 29 emulator. Download `panther-debug-apk` from the build run's artifacts; it is a debug-signed build, not a release APK. Test reports are uploaded when available.
+
+Artifact cleanup runs every 12 hours (UTC) and can also be triggered manually. It deletes **all repository Actions artifacts** that are at least 12 hours old, including artifacts from other workflows. GitHub schedules can be delayed, so deletion is not guaranteed at exactly 12 hours; with an on-time schedule, an artifact can remain for up to almost 24 hours. Upload retention is also set to one day as a fallback. Scheduled workflows only run from the default branch, so cleanup starts after this workflow is merged into `main` and Actions are enabled for the repository.
