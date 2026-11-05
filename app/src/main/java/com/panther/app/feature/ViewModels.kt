@@ -45,6 +45,8 @@ class ProgramsViewModel @Inject constructor(
     fun deactivate(id: Long) = execute { repository.deactivateProgram(id) }
     fun archive(id: Long, archived: Boolean) = execute { archiveProgram(id, archived) }
     fun days(id: Long) = repository.observeDays(id)
+        .map { DataState(it, loading = false) }
+        .catch { emit(DataState(emptyList(), loading = false, error = true)) }
 }
 
 @HiltViewModel
