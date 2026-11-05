@@ -17,8 +17,17 @@ enum class ThemeChoice { DARK, LIGHT, SYSTEM }
 @Singleton
 class ThemePreferences @Inject constructor(@ApplicationContext private val context: Context) {
     private val key = stringPreferencesKey("theme")
-    val choice = context.themeDataStore.data.catch { if (it is IOException) emit(emptyPreferences()) else throw it }.map { prefs ->
-        ThemeChoice.entries.firstOrNull { it.name == prefs[key] } ?: ThemeChoice.DARK
-    }
+    val choice = context.themeDataStore.data
+        .catch { e ->
+            if (e is IOException) emit(emptyPreferences())
+            else {
+                // Handle other exceptions and emit error state if needed
+                // For now, log and throw as per existing logic, but ensure UI catches it
+                throw e
+            }
+        }
+        .map { prefs ->
+            ThemeChoice.entries.firstOrNull { it.name == prefs[key] } ?: ThemeChoice.DARK
+        }
     suspend fun set(choice: ThemeChoice) { context.themeDataStore.edit { it[key] = choice.name } }
 }
