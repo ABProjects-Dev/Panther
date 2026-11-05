@@ -96,7 +96,12 @@ fun ProfileScreen(viewModel: ProfileViewModel, onSettings: () -> Unit) {
 fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val selected by viewModel.theme.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
-    Column(Modifier.fillMaxSize().padding(PantherSpacing.medium), verticalArrangement = Arrangement.spacedBy(PantherSpacing.small)) {
+    val pendingBackup by viewModel.pendingBackup.collectAsStateWithLifecycle()
+    val operationMessage by viewModel.operationMessage.collectAsStateWithLifecycle()
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri -> if (uri != null) viewModel.exportBackup(uri) }
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if (uri != null) viewModel.validateImport(uri) }
+    LaunchedEffect(operationMessage) { if (operationMessage != null) { kotlinx.coroutines.delay(3500); viewModel.clearMessage() } }
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(PantherSpacing.medium), verticalArrangement = Arrangement.spacedBy(PantherSpacing.small)) {
         TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
         PantherSectionHeader(stringResource(R.string.settings))
         Text(stringResource(R.string.theme), style = MaterialTheme.typography.titleMedium)
@@ -106,6 +111,19 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                 Text(stringResource(when (choice) { ThemeChoice.DARK -> R.string.dark; ThemeChoice.LIGHT -> R.string.light; ThemeChoice.SYSTEM -> R.string.system }))
             }
         }
+        HorizontalDivider(Modifier.padding(vertical = PantherSpacing.small))
+        Text(stringResource(R.string.backup_section), style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.backup_description), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        PantherButton(stringResource(R.string.export_backup), { exportLauncher.launch("panther-backup.json") }, Modifier.fillMaxWidth())
+        OutlinedButton(onClick = { importLauncher.launch(arrayOf("application/json", "text/*", "application/octet-stream")) }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.import_backup)) }
         if (error) Text(stringResource(R.string.error_generic), color = MaterialTheme.colorScheme.error)
+        operationMessage?.let { Text(stringResource(it), color = if (it == R.string.error_generic || it == R.string.backup_invalid) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary) }
     }
+    if (pendingBackup != null) AlertDialog(
+        onDismissRequest = { viewModel.cancelImport() },
+        title = { Text(stringResource(R.string.confirm_import_title)) },
+        text = { Text(stringResource(R.string.confirm_import, pendingBackup!!.programs.size)) },
+        confirmButton = { TextButton(onClick = { viewModel.restorePendingBackup() }) { Text(stringResource(R.string.import_replace)) } },
+        dismissButton = { TextButton(onClick = { viewModel.cancelImport() }) { Text(stringResource(R.string.cancel)) } },
+    )
 }

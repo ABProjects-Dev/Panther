@@ -55,9 +55,9 @@ On Windows use `gradlew.bat`. Alternatively open the root directory in Android S
 
 ## Current status
 
-The initial implementation includes the four-destination shell, dashboard, program creation/rename/activation/deactivation/archive/delete and basic details, local profile editing with Photo Picker, and persisted theme selection. Room models support days, exercises and independent per-set targets; day/exercise editing UI is not implemented yet. Program history is a list of programs, not workout tracking. Backup, import and PDF export are not implemented. Android automatic backup remains disabled pending a deliberate backup strategy.
+The MVP includes the four-destination shell and dashboard; local profile editing with Photo Picker; program creation, editing, activation, archive and confirmed deletion; training-day and exercise editing/reordering; independent repetition or duration targets per set; persisted theme selection; validated JSON backup/restore; and per-program PDF export. Program history is a list of programs, not workout tracking. Backup files are chosen through Android's Storage Access Framework; importing validates the complete file and asks before replacing local data. Profile images are included in backup files with a 5 MB image limit. Android automatic backup remains disabled.
 
-**Verification is pending:** the current development environment has no JDK or Android SDK, so the implementation, build and tests have not been verified. Room schema export is configured; commit the generated schema after the first successful build. See the roadmap for follow-up work.
+**Verification is pending in this checkout:** this environment has no JDK or Android SDK, so Gradle build, unit tests, Room instrumentation tests, and device UI checks could not be run. Static XML parsing and `git diff --check` are available, but are not substitutes for a build. Room schema export is configured; commit the generated schema after the first successful build. See the roadmap for remaining verification work.
 
 ## GitHub Actions
 

@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface PantherDao {
     @Query("SELECT * FROM profile WHERE id = 1") fun profile(): Flow<UserProfileEntity?>
+    @Query("SELECT * FROM profile WHERE id = 1") suspend fun profileNow(): UserProfileEntity?
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun saveProfile(profile: UserProfileEntity)
     @Query("""SELECT p.*, (SELECT COUNT(*) FROM training_days d WHERE d.programId=p.id) AS dayCount,
         (SELECT COUNT(*) FROM exercises e INNER JOIN training_days d ON e.trainingDayId=d.id WHERE d.programId=p.id) AS exerciseCount
@@ -36,4 +37,14 @@ interface PantherDao {
     @Query("UPDATE exercises SET sortOrder = :order WHERE id = :id AND trainingDayId = :dayId") suspend fun orderExercise(dayId: Long, id: Long, order: Int): Int
     @Query("DELETE FROM exercise_sets WHERE exerciseId = :exerciseId") suspend fun deleteSets(exerciseId: Long)
     @Insert suspend fun insertSets(sets: List<ExerciseSetEntity>)
+
+    @Query("SELECT * FROM programs ORDER BY createdAt, id") suspend fun allPrograms(): List<WorkoutProgramEntity>
+    @Query("SELECT * FROM training_days WHERE programId = :programId ORDER BY sortOrder, id") suspend fun allDays(programId: Long): List<TrainingDayEntity>
+    @Query("SELECT * FROM exercises WHERE trainingDayId = :dayId ORDER BY sortOrder, id") suspend fun allExercises(dayId: Long): List<ExerciseEntity>
+    @Query("SELECT * FROM exercise_sets WHERE exerciseId = :exerciseId ORDER BY setNumber") suspend fun allSets(exerciseId: Long): List<ExerciseSetEntity>
+    @Query("DELETE FROM exercise_sets") suspend fun clearSets()
+    @Query("DELETE FROM exercises") suspend fun clearExercises()
+    @Query("DELETE FROM training_days") suspend fun clearDays()
+    @Query("DELETE FROM programs") suspend fun clearPrograms()
+    @Query("DELETE FROM profile") suspend fun clearProfile()
 }

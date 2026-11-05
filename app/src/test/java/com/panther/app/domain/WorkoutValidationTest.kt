@@ -16,6 +16,18 @@ class WorkoutValidationTest {
         assertFalse(WorkoutValidation.sets(listOf(ExerciseSet(exerciseId = 1, setNumber = 1, targetType = TargetType.REPS, targetValue = 0))))
         assertFalse(WorkoutValidation.sets(listOf(ExerciseSet(exerciseId = 1, setNumber = 1, targetType = TargetType.REPS, targetValue = 5, targetSeconds = 3))))
     }
+    @Test fun backupValidationEnforcesSingleActiveProgramAndValidSetTargets() {
+        val now = 1_700_000_000_000L
+        fun program(name: String, active: Boolean) = ProgramBackup(name, now, active, false, emptyList())
+        assertTrue(WorkoutValidation.backup(PantherBackup(profile = UserProfile("A"), programs = listOf(program("A", true), program("B", false)))))
+        assertFalse(WorkoutValidation.backup(PantherBackup(profile = null, programs = listOf(program("A", true), program("B", true)))))
+        assertFalse(WorkoutValidation.backup(PantherBackup(profile = null, programs = listOf(ProgramBackup("A", now, true, true, emptyList())))))
+        val badExercise = ProgramBackup("Plan", now, false, false, listOf(DayBackup("Day", 0, listOf(
+            ExerciseBackup("Lift", 0, listOf(SetBackup(1, TargetType.REPS, 0, null, null)))
+        ))))
+        assertFalse(WorkoutValidation.backup(PantherBackup(profile = null, programs = listOf(badExercise))))
+    }
+
     @Test fun durationMustBeNonZeroAndSecondsInRange() {
         fun set(m: Int, s: Int) = ExerciseSet(exerciseId = 1, setNumber = 1, targetType = TargetType.DURATION, targetMinutes = m, targetSeconds = s)
         assertTrue(WorkoutValidation.sets(listOf(set(1, 0))))

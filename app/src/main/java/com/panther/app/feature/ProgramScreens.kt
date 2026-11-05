@@ -1,8 +1,6 @@
 package com.panther.app.feature
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -12,7 +10,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.panther.app.R
 import com.panther.app.core.designsystem.components.*
@@ -22,11 +19,6 @@ import com.panther.app.domain.model.WorkoutValidation
 import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
-
-@Composable
-private fun Screen(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Column(modifier = modifier.fillMaxSize().padding(horizontal = PantherSpacing.medium), content = content)
-}
 
 @Composable
 private fun ProgramCard(program: WorkoutProgram, onClick: () -> Unit, actions: @Composable ColumnScope.() -> Unit = {}) {
@@ -123,30 +115,5 @@ fun HistoryScreen(viewModel: ProgramsViewModel, onDetails: (Long) -> Unit) {
         if (state.error) item { ErrorNotice(true) }
         if (!state.loading && !state.error && state.value.isEmpty()) item { Text(stringResource(R.string.no_history)) }
         items(state.value, key = { it.id }) { p -> ProgramCard(p, { onDetails(p.id) }) }
-    }
-}
-
-@Composable
-fun ProgramDetailsScreen(viewModel: ProgramsViewModel, id: Long, onBack: () -> Unit) {
-    val state by viewModel.programs.collectAsStateWithLifecycle()
-    val daysFlow = remember(id) { viewModel.days(id) }
-    val days by daysFlow.collectAsStateWithLifecycle(initialValue = DataState(emptyList()))
-    val program = state.value.firstOrNull { it.id == id }
-    Screen(modifier = Modifier.verticalScroll(rememberScrollState())) {
-        TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
-        PantherSectionHeader(stringResource(R.string.details))
-        Spacer(Modifier.height(PantherSpacing.medium))
-        if (state.loading) Text(stringResource(R.string.loading))
-        if (state.error) ErrorNotice(true)
-        if (program != null) {
-            ProgramCard(program, {})
-            Spacer(Modifier.height(PantherSpacing.medium))
-            when {
-                days.loading -> Text(stringResource(R.string.loading))
-                days.error -> ErrorNotice(true)
-                days.value.isEmpty() -> Text(stringResource(R.string.no_days))
-                else -> days.value.forEach { Text(it.name, modifier = Modifier.padding(vertical = 8.dp)) }
-            }
-        }
     }
 }
