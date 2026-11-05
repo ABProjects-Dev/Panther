@@ -1,6 +1,8 @@
 package com.panther.app.feature
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -128,9 +130,9 @@ fun HistoryScreen(viewModel: ProgramsViewModel, onDetails: (Long) -> Unit) {
 fun ProgramDetailsScreen(viewModel: ProgramsViewModel, id: Long, onBack: () -> Unit) {
     val state by viewModel.programs.collectAsStateWithLifecycle()
     val daysFlow = remember(id) { viewModel.days(id) }
-    val days by daysFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val days by daysFlow.collectAsStateWithLifecycle(initialValue = DataState(emptyList()))
     val program = state.value.firstOrNull { it.id == id }
-    Screen {
+    Screen(modifier = Modifier.verticalScroll(rememberScrollState())) {
         TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
         PantherSectionHeader(stringResource(R.string.details))
         Spacer(Modifier.height(PantherSpacing.medium))
@@ -139,8 +141,12 @@ fun ProgramDetailsScreen(viewModel: ProgramsViewModel, id: Long, onBack: () -> U
         if (program != null) {
             ProgramCard(program, {})
             Spacer(Modifier.height(PantherSpacing.medium))
-            if (days.isEmpty()) Text(stringResource(R.string.no_days))
-            else days.forEach { Text(it.name, modifier = Modifier.padding(vertical = 8.dp)) }
+            when {
+                days.loading -> Text(stringResource(R.string.loading))
+                days.error -> ErrorNotice(true)
+                days.value.isEmpty() -> Text(stringResource(R.string.no_days))
+                else -> days.value.forEach { Text(it.name, modifier = Modifier.padding(vertical = 8.dp)) }
+            }
         }
     }
 }
