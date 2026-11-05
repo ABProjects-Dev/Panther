@@ -18,18 +18,18 @@ No workout sessions, recorded performance, timers, accounts or cloud synchroniza
 
 ## Architecture and structure
 
-One Android application module with logical presentation, domain and data layers. Dependencies point toward domain; Hilt connects implementations. See [architecture](docs/ARCHITECTURE.md) and [roadmap](docs/ROADMAP.md).
+One Android application module with Compose presentation, domain models/use cases and a Room-backed repository. Hilt provides dependencies; DataStore stores theme choice. See [architecture](docs/ARCHITECTURE.md) and [roadmap](docs/ROADMAP.md).
 
 ```text
 app/src/main/java/com/panther/app/
-├── PantherApplication.kt
+├── core/          # design system, navigation and theme preferences
+├── data/          # Room entities, DAO, database and repository
+├── di/            # Hilt bindings
+├── domain/        # models, validation, repository contract, use cases
+├── feature/       # Compose screens and ViewModels
 ├── MainActivity.kt
-└── core/
-    ├── designsystem/theme/  # colors, typography, shapes and spacing
-    └── navigation/          # initial navigation host
+└── PantherApplication.kt
 ```
-
-Data, domain, feature and DI packages will be introduced when they contain real implementations rather than empty placeholders.
 
 ## Prerequisites
 
@@ -55,4 +55,6 @@ On Windows use `gradlew.bat`. Alternatively open the root directory in Android S
 
 ## Current status
 
-Repository and initial application foundation only: launcher, Persian-first RTL presentation, a basic dark/light theme API, Hilt setup, and a single foundation navigation destination. There is no theme picker or persistence yet; dark is the default. Room, DataStore and the other libraries are configured but product data and features are not yet implemented. Android automatic backup is disabled until a deliberate backup strategy is implemented. See the roadmap for subsequent work.
+The initial implementation includes the four-destination shell, dashboard, program creation/rename/activation/deactivation/archive/delete and basic details, local profile editing with Photo Picker, and persisted theme selection. Room models support days, exercises and independent per-set targets; day/exercise editing UI is not implemented yet. Program history is a list of programs, not workout tracking. Backup, import and PDF export are not implemented. Android automatic backup remains disabled pending a deliberate backup strategy.
+
+**Verification is pending:** the current development environment has no JDK or Android SDK, so the implementation, build and tests have not been verified. Room schema export is configured; commit the generated schema after the first successful build. See the roadmap for follow-up work.
