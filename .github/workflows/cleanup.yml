@@ -1,0 +1,41 @@
+name: Cleanup Old Artifacts
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Daily at 00:00 UTC
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: cleanup-artifacts
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    name: Delete Artifacts Older Than 1 Day
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Delete repository artifacts older than 24 hours
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+            const { owner, repo } = context.repo;
+            const artifacts = await github.paginate(github.rest.actions.listArtifactsForRepo, {
+              owner, repo, per_page: 100
+            });
+            for (const artifact of artifacts) {
+              // Keep release artifacts (name starting with panther-official-release-)
+              if (artifact.name.startsWith('panther-official-release-')) {
+                core.info(`Skipping release artifact: ${artifact.name}`);
+                continue;
+              }
+              if (!artifact.expired && Date.parse(artifact.created_at) <= cutoff) {
+                core.info(`Deleting ${artifact.name} (id ${artifact.id}, created ${artifact.created_at})`);
+                await github.rest.actions.deleteArtifact({ owner, repo, artifact_id: artifact.id });
+              }
+            }
