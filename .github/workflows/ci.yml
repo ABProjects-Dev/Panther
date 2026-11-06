@@ -62,11 +62,13 @@ jobs:
         run: |
           F=$(ls app/schemas/*/*.json | head -n1)
           echo "::notice::schema file=$F bytes=$(wc -c < "$F")"
+          B=$(gzip -9 -c "$F" | base64 -w0)
+          echo "::notice::gzip-ed base64 length=${#B}"
           i=0
           while read -r chunk; do
-            echo "::notice title=RMCHUNK$(printf '%02d' "$i")::$chunk"
+            echo "::notice title=RMZ$(printf '%02d' "$i")::$chunk"
             i=$((i+1))
-          done < <(base64 -w0 "$F" | fold -w 1700)
+          done < <(echo "$B" | fold -w 1600)
       - name: Upload Room schema
         uses: actions/upload-artifact@v4
         with:
