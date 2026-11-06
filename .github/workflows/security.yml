@@ -17,6 +17,46 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Compares the dependency changes in a pull request against the GitHub Advisory
+  # Database and fails the check when a change introduces a high-severity advisory.
+  # Requires the repository setting "Dependency graph" to be enabled; when it is
+  # disabled the action reports a configuration error instead of reviewing the graph.
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      # Advisory until a repository owner enables "Dependency graph". Once it is
+      # enabled this becomes a hard gate automatically: the enforcement step below
+      # only tolerates the specific "graph unavailable" signature.
+      - name: Review dependency changes
+        id: review
+        continue-on-error: true
+        uses: actions/dependency-review-action@v5.0.0
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
+
+      - name: Enforce the review once the dependency graph is available
+        if: steps.review.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          status=$(curl -s -o /dev/null -w '%{http_code}' \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/dependency-graph/sbom")
+          if [ "$status" = "404" ]; then
+            echo "::warning::Dependency review cannot run because the dependency graph is disabled. Enable Settings > Code security > Dependency graph to activate this gate."
+            exit 0
+          fi
+          echo "::error::Dependency review failed with the dependency graph available (HTTP ${status}); a dependency in this pull request is vulnerable or the action is misconfigured."
+          exit 1
+
   dependency-audit:
     name: Dependency audit
     runs-on: ubuntu-latest
