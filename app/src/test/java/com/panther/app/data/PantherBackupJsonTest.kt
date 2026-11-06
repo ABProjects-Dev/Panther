@@ -1,5 +1,6 @@
 package com.panther.app.data
 
+import com.panther.app.data.backup.PantherBackupJson
 import com.panther.app.domain.model.DayBackup
 import com.panther.app.domain.model.ExerciseBackup
 import com.panther.app.domain.model.PantherBackup
