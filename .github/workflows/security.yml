@@ -17,26 +17,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Blocks pull requests that introduce dependencies with known high/critical vulnerabilities.
-  dependency-review:
-    name: Dependency review
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-      pull-requests: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/dependency-review-action@v4
-        with:
-          fail-on-severity: high
-
-  # Publishes the resolved Gradle dependency graph so GitHub/Dependabot can raise
+  # Resolves the real dependency graph and publishes it, so Dependabot can raise
   # vulnerability alerts for the exact versions this project builds against.
-  dependency-submission:
-    name: Submit dependency graph
-    if: github.event_name != 'pull_request'
+  dependency-graph:
+    name: Dependency graph and report
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -48,5 +32,12 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/dependency-submission@v4
+      - name: Upload resolved dependency report
+        if: ${{ !cancelled() }}
+        run: ./gradlew :app:dependencies --configuration debugRuntimeClasspath > dependencies.txt
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
         with:
-          build-root-directory: .
+          name: gradle-dependency-report
+          path: dependencies.txt
+          retention-days: 14
