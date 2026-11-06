@@ -55,6 +55,8 @@ jobs:
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as fh:
               fh.write("\n".join(out) + "\n")
           print("\n".join(out))
+          # Also surfaced as an annotation so the counts are readable from the API.
+          print(f"::notice::unit tests executed: {total['tests']} total, {total['failures']} failures, {total['errors']} errors, {total['skipped']} skipped")
           EOF
       - name: Upload test and lint reports
         if: ${{ !cancelled() }}
