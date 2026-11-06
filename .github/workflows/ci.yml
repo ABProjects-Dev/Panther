@@ -58,6 +58,13 @@ jobs:
           # Also surfaced as an annotation so the counts are readable from the API.
           print(f"::notice::unit tests executed: {total['tests']} total, {total['failures']} failures, {total['errors']} errors, {total['skipped']} skipped")
           EOF
+      - name: Upload Room schema
+        uses: actions/upload-artifact@v4
+        with:
+          name: room-schema
+          path: app/schemas/
+          if-no-files-found: warn
+          retention-days: 7
       - name: Upload test and lint reports
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
