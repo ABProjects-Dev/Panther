@@ -58,6 +58,11 @@ jobs:
           # Also surfaced as an annotation so the counts are readable from the API.
           print(f"::notice::unit tests executed: {total['tests']} total, {total['failures']} failures, {total['errors']} errors, {total['skipped']} skipped")
           EOF
+      - name: Print Room schema (temporary)
+        run: |
+          for f in app/schemas/*/*.json; do
+            [ -f "$f" ] && echo "::notice title=ROOMSCHEMA $(basename $(dirname $f))::$(base64 -w0 "$f")"
+          done
       - name: Upload Room schema
         uses: actions/upload-artifact@v4
         with:
