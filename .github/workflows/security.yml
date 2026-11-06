@@ -2,24 +2,26 @@ name: Security Scan
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
   schedule:
-    - cron: '0 0 * * 1' # Every Monday
+    - cron: '0 3 * * 1' # Every Monday at 03:00 UTC
+  workflow_dispatch:
 
 permissions:
   contents: read
+  security-events: write
 
 concurrency:
   group: security-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  dependency-check:
-    name: Dependency Vulnerability Check
+  dependency-vulnerability-check:
+    name: Dependency vulnerability check
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -27,34 +29,32 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Run OWASP Dependency Check
-        uses: dependency-check/dependency-check-action@v3
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK 36
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      # Resolve the full compile+runtime classpath so the scanner inspects real versions.
+      - name: Resolve dependency classpath
+        run: ./gradlew :app:dependencies --configuration debugRuntimeClasspath --stacktrace
+      - name: OWASP Dependency-Check
+        uses: dependency-check/DependencyCheck@v6
         with:
-          project: 'Panther'
-          path: '.'
-          format: 'SARIF'
-          failBuildOnCVSS: 7
-      - name: Upload SARIF Report
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: dependency-check-report.sarif
-
-  license-check:
-    name: License Compliance Check
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - name: Check Licenses
-        run: ./gradlew :app:dependencyLicenseReport --stacktrace
-      - name: Upload License Report
+          project: Panther
+          scan: app
+          format: SARIF
+          out: reports
+          args: >-
+            --failOnCVSS 7
+            --enableRetired
+      - name: Upload SARIF report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
-          name: license-report
-          path: app/build/reports/dependency-license/
-          retention-days: 1
+          name: dependency-check-sarif
+          path: reports/dependency-check-report.sarif
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Publish SARIF to code scanning
+        if: ${{ !cancelled() && github.event_name != 'pull_request' }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: reports/dependency-check-report.sarif

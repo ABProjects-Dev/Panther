@@ -23,24 +23,25 @@ The Panther project is an Android application built with Kotlin, Jetpack Compose
 ## Build System
 - **Gradle**: Version 8.11.1
 - **Android Gradle Plugin**: Integrated via `libs.plugins`
-- **Kotlin**: Version 17
+- **Kotlin**: 2.0.21 (JVM target 17)
 - **Compose**: Enabled
 - **SDK**: Compile/Target 36, Min 26
 
 ## GitHub Actions Architecture
-- **CI**: Build, Test, Lint (ci.yml)
-- **Security**: Dependency/License scan (security.yml)
-- **Build**: Release Candidate (build.yml)
-- **Release**: Signed Official Release (release.yml)
-- **Cleanup**: Artifact management (cleanup.yml)
+- **CI**: Lint, unit tests, debug APK, instrumentation tests (ci.yml)
+- **Security**: OWASP dependency vulnerability scan (security.yml)
+- **Build**: Release candidate APK on `main` (build.yml)
+- **Release**: Signed official release on `v*.*.*` tags (release.yml)
+- **Cleanup**: Artifact retention management (cleanup.yml)
 
 ## Security (Rule 13)
 - Keystore and Secrets managed via GitHub Secrets.
 - No sensitive data in repository.
 
-## Maintenance (Rule 16)
-- Artifacts cleaned daily (cleanup.yml).
-- Workspace cleanup required after tasks.
+## Maintenance
+- Artifacts are removed by `cleanup.yml` after the retention window (30 days, matching the
+  longest workflow retention) and official release artifacts are always preserved.
+- Room schemas are exported to `app/schemas`; keep them committed and add migrations on change.
 
 Last Updated: 2026-11-05
 Language: English (Rule 3)

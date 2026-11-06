@@ -21,6 +21,7 @@ import com.panther.app.core.designsystem.components.PantherCard
 import com.panther.app.core.designsystem.components.PantherSectionHeader
 import com.panther.app.core.designsystem.components.PantherTextField
 import com.panther.app.core.designsystem.theme.PantherSpacing
+import com.panther.app.core.format.PantherDateFormat
 import com.panther.app.domain.model.*
 
 private fun normalizedTarget(value: String): String = value.map { digit ->
@@ -51,7 +52,7 @@ fun ProgramEditorScreen(viewModel: ProgramsViewModel, settings: SettingsViewMode
             Text(stringResource(R.string.counts, program.dayCount, program.exerciseCount), style = MaterialTheme.typography.bodyMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(PantherSpacing.small)) {
                 Text(stringResource(if (program.isArchived) R.string.status_archived else if (program.isActive) R.string.status_active else R.string.status_inactive), color = MaterialTheme.colorScheme.primary)
-                Text(stringResource(R.string.created_at, java.text.DateFormat.getDateInstance().format(java.util.Date(program.createdAt))), style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.created_at, PantherDateFormat.medium(program.createdAt)), style = MaterialTheme.typography.bodySmall)
             }
         } else if (!programs.loading) Text(stringResource(R.string.program_not_found), color = MaterialTheme.colorScheme.error)
         if (days.loading) Text(stringResource(R.string.loading))

@@ -57,10 +57,25 @@ On Windows use `gradlew.bat`. Alternatively open the root directory in Android S
 
 The MVP includes the four-destination shell and dashboard; local profile editing with Photo Picker; program creation, editing, activation, archive and confirmed deletion; training-day and exercise editing/reordering; independent repetition or duration targets per set; persisted theme selection; validated JSON backup/restore; and per-program PDF export. Program history is a list of programs, not workout tracking. Backup files are chosen through Android's Storage Access Framework; importing validates the complete file and asks before replacing local data. Profile images are included in backup files with a 5 MB image limit. Android automatic backup remains disabled.
 
-**Verification is pending in this checkout:** this environment has no JDK or Android SDK, so Gradle build, unit tests, Room instrumentation tests, and device UI checks could not be run. Static XML parsing and `git diff --check` are available, but are not substitutes for a build. Room schema export is configured; commit the generated schema after the first successful build. See the roadmap for remaining verification work.
+**Verification status:** the Gradle build, unit tests, instrumentation tests and device UI
+checks have not yet been executed successfully in CI. Unit tests for the backup codec run on
+the JVM; Room and UI tests require an emulator. Room schema export is configured to
+`app/schemas`, and the first generated schema must be committed after a successful build.
 
 ## GitHub Actions
 
 Android CI runs on pull requests, pushes to any branch, and manual dispatch. It builds a debug APK, runs unit tests and lint, and runs instrumented tests on an API 29 emulator. Download `panther-debug-apk` from the build run's artifacts; it is a debug-signed build, not a release APK. Test reports are uploaded when available.
 
-Artifact cleanup runs every 12 hours (UTC) and can also be triggered manually. It deletes **all repository Actions artifacts** that are at least 12 hours old, including artifacts from other workflows. GitHub schedules can be delayed, so deletion is not guaranteed at exactly 12 hours; with an on-time schedule, an artifact can remain for up to almost 24 hours. Upload retention is also set to one day as a fallback. Scheduled workflows only run from the default branch, so cleanup starts after this workflow is merged into `main` and Actions are enabled for the repository.
+Five workflows are defined: `ci.yml` (lint, unit tests, debug APK, instrumentation),
+`security.yml` (OWASP dependency scan), `build.yml` (release candidate from `main`),
+`release.yml` (signed release on `v*.*.*` tags) and `cleanup.yml` (artifact retention).
+See [docs/GITHUB_ACTIONS.md](docs/GITHUB_ACTIONS.md) for the authoritative description.
+
+Artifact cleanup runs daily at 00:00 UTC and can also be triggered manually. It deletes
+artifacts older than 30 days (matching the longest workflow retention) and never deletes
+`panther-official-release-*` artifacts. Scheduled workflows only run from the default
+branch.
+
+## License
+
+MIT — see [LICENSE](LICENSE). Security policy: [SECURITY.md](SECURITY.md).

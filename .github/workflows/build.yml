@@ -2,12 +2,14 @@ name: Build Release Candidate
 
 on:
   push:
-    branches: [ develop ]
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
   workflow_dispatch:
 
 permissions:
   contents: read
-  artifacts: write
 
 concurrency:
   group: build-${{ github.workflow }}-${{ github.ref }}
@@ -15,7 +17,7 @@ concurrency:
 
 jobs:
   build-release-candidate:
-    name: Build Release APK (Unsigned/Test)
+    name: Build release APK (unsigned candidate)
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -26,18 +28,19 @@ jobs:
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
       - uses: android-actions/setup-android@v3
-        with:
-          api-level: 36
-          build-tools: '36.0.0'
-      - name: Assemble Release Candidate (Unsigned)
+      - name: Install Android SDK 36
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - name: Assemble release candidate
         run: ./gradlew :app:assembleRelease --stacktrace
-      - name: Upload Release Candidate APK
+      - name: Upload release candidate APK
         uses: actions/upload-artifact@v4
         with:
           name: panther-release-candidate-apk
-          path: app/build/outputs/apk/release/app-release.apk
-          retention-days: 1
-      - name: Verify APK Version
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 7
+      - name: Verify APK metadata
         run: |
           APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
-          aapt dump badging $APK_PATH | grep -E "package:|versionCode:|versionName:"
+          AAPT=$(find "$ANDROID_HOME/build-tools" -name aapt2 | head -n 1)
+          "$AAPT" dump badging "$APK_PATH" | grep -E "package:|versionCode:|versionName:"

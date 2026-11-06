@@ -14,13 +14,15 @@ data class SetBackup(val setNumber: Int, val targetType: TargetType, val targetV
 data class PantherBackup(val version: Int = CURRENT_BACKUP_VERSION, val profile: UserProfile?, val programs: List<ProgramBackup>, val profileImageBase64: String? = null) {
     companion object {
         const val CURRENT_BACKUP_VERSION = 1
-        const val MAX_PROGRAMS = 500
-        const val MAX_DAYS_PER_PROGRAM = 100
-        const val MAX_EXERCISES_PER_DAY = 500
-        const val MAX_SETS_PER_EXERCISE = 100
+        // Caps are chosen together with MAX_BACKUP_BYTES so that a backup can always be
+        // materialised in memory without exhausting the process heap.
+        const val MAX_PROGRAMS = 100
+        const val MAX_DAYS_PER_PROGRAM = 50
+        const val MAX_EXERCISES_PER_DAY = 50
+        const val MAX_SETS_PER_EXERCISE = 30
         const val MAX_PROFILE_IMAGE_BYTES = 5_000_000
         const val MAX_PROFILE_IMAGE_BASE64_CHARS = 7_000_000
-        const val MAX_BACKUP_BYTES = 10_000_000
+        const val MAX_BACKUP_BYTES = 8_000_000
     }
 }
 

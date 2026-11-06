@@ -1,4 +1,107 @@
 package com.panther.app.data.backup
 
-import com.panther.app.domain.model.*\nimport org.json.JSONArray\nimport org.json.JSONObject\nimport org.json.JSONTokener\n\n/** Versioned, fully validated JSON codec. Parsing is side-effect free; callers restore only after success. */\nobject PantherBackupJson {\n    fun encode(backup: PantherBackup): String {\n        require(WorkoutValidation.backup(backup))\n        backup.profileImageBase64?.let {\n            val imageBytes = android.util.Base64.decode(it, android.util.Base64.DEFAULT)\n            require(imageBytes.isNotEmpty() && imageBytes.size <= PantherBackup.MAX_PROFILE_IMAGE_BYTES) { \"Invalid profile image data\" }\n        }\n        val root = JSONObject().put(\"format\", \"panther-backup\").put(\"version\", backup.version)\n        root.put(\"profile\", backup.profile?.let { profile ->\n            JSONObject().put(\"name\", profile.name)\n                .put(\"age\", profile.age ?: JSONObject.NULL).put(\"heightCm\", profile.heightCm ?: JSONObject.NULL)\n                .put(\"weightKg\", profile.weightKg ?: JSONObject.NULL)\n        } ?: JSONObject.NULL)\n        root.put(\"profileImageBase64\", backup.profileImageBase64 ?: JSONObject.NULL)\n        root.put(\"programs\", JSONArray().apply {\n            backup.programs.forEach { program -> put(JSONObject().put(\"id\", program.originalId).put(\"name\", program.name).put(\"createdAt\", program.createdAt)\n                .put(\"active\", program.isActive).put(\"archived\", program.isArchived).put(\"days\", JSONArray().apply {\n                    program.days.forEach { day -> put(JSONObject().put(\"name\", day.name).put(\"order\", day.sortOrder).put(\"exercises\", JSONArray().apply {\n                        day.exercises.forEach { exercise -> put(JSONObject().put(\"name\", exercise.name).put(\"order\", exercise.sortOrder).put(\"sets\", JSONArray().apply {\n                            exercise.sets.forEach { set -> put(JSONObject().put(\"number\", set.setNumber).put(\"type\", set.targetType.name)\n                                .put(\"value\", set.targetValue ?: JSONObject.NULL).put(\"minutes\", set.targetMinutes ?: JSONObject.NULL)\n                                .put(\"seconds\", set.targetSeconds ?: JSONObject.NULL)) }\n                        })) }\n                    })) }\n                })) }\n            }\n        })\n        return root.toString(2)\n    }\n\n    fun decode(text: String): PantherBackup {\n        require(text.length <= PantherBackup.MAX_BACKUP_BYTES) { \"Backup file is too large\" }\n        val tokener = JSONTokener(text)\n        val rootObj = tokener.nextValue()\n        if (!(rootObj is JSONObject)) error(\"Invalid backup JSON\")\n        val root = rootObj as JSONObject\n        require(tokener.nextClean() == '\\u0000') { \"Unexpected trailing data\" }\n        require(root.getString(\"format\") == \"panther-backup\") { \"Not a Panther backup\" }\n        val version = root.getInt(\"version\")\n        require(version == PantherBackup.CURRENT_BACKUP_VERSION) { \"Unsupported backup version\" }\n        val profile = if (root.isNull(\"profile\")) null else root.getJSONObject(\"profile\").let {\n            UserProfile(it.getString(\"name\"), null, it.nullableInt(\"age\"), it.nullableDouble(\"heightCm\"), it.nullableDouble(\"weightKg\"))\n        }\n        val profileImageBase64 = root.nullableString(\"profileImageBase64\")\n        profileImageBase64?.let {\n            val imageBytes = android.util.Base64.decode(it, android.util.Base64.DEFAULT)\n            require(imageBytes.isNotEmpty() && imageBytes.size <= PantherBackup.MAX_PROFILE_IMAGE_BYTES) { \"Invalid profile image data\" }\n        }\n        val programsJson = root.getJSONArray(\"programs\")\n        require(programsJson.length() <= PantherBackup.MAX_PROGRAMS) { \"Too many programs\" }\n        val programs = (0 until programsJson.length()).map { index ->\n            val p = programsJson.getJSONObject(index)\n            val daysJson = p.getJSONArray(\"days\")\n            require(daysJson.length() <= PantherBackup.MAX_DAYS_PER_PROGRAM) { \"Too many days\" }\n            ProgramBackup(p.getString(\"name\"), p.getLong(\"createdAt\"), p.getBoolean(\"active\"), p.getBoolean(\"archived\"),\n                (0 until daysJson.length()).map { dayIndex ->\n                    val d = daysJson.getJSONObject(dayIndex)\n                    val exercisesJson = d.getJSONArray(\"exercises\")\n                    require(exercisesJson.length() <= PantherBackup.MAX_EXERCISES_PER_DAY) { \"Too many exercises\" }\n                    DayBackup(d.getString(\"name\"), d.getInt(\"order\"), (0 until exercisesJson.length()).map { exerciseIndex ->\n                        val e = exercisesJson.getJSONObject(exerciseIndex)\n                        val setsJson = e.getJSONArray(\"sets\")\n                        require(setsJson.length() in 1..PantherBackup.MAX_SETS_PER_EXERCISE) { \"Invalid number of sets\" }\n                        ExerciseBackup(e.getString(\"name\"), e.getInt(\"order\"), (0 until setsJson.length()).map { setIndex ->\n                            val s = setsJson.getJSONObject(setIndex)\n                            SetBackup(s.getInt(\"number\"), TargetType.valueOf(s.getString(\"type\")), s.nullableInt(\"value\"), s.nullableInt(\"minutes\"), s.nullableInt(\"seconds\"))\n                        })\n                    }, originalId = p.optLong(\"originalId\", -1L))\n                })
-            }, originalId = root.optLong(\"originalId\", -1L))\n        }\n        return PantherBackup(version, profile, programs, profileImageBase64).also { require(WorkoutValidation.backup(it)) { \"Backup contains invalid data\" } }\n    }\n\n    private fun JSONObject.nullableString(key: String): String? = if (isNull(key)) null else getString(key)\n    private fun JSONObject.nullableInt(key: String): Int? = if (isNull(key)) null else getInt(key)\n    private fun JSONObject.nullableDouble(key: String): Double? = if (isNull(key)) null else getDouble(key).takeIf { it.isFinite() } ?: error(\"Invalid number\")\n}
+import com.panther.app.domain.model.*
+import org.json.JSONArray
+import org.json.JSONObject
+import org.json.JSONTokener
+
+/** Versioned, fully validated JSON codec. Parsing is side-effect free; callers restore only after success. */
+object PantherBackupJson {
+    /** JSON key that carries [ProgramBackup.originalId] in both directions. */
+    private const val KEY_ORIGINAL_ID = "id"
+
+    fun encode(backup: PantherBackup): String {
+        require(WorkoutValidation.backup(backup))
+        backup.profileImageBase64?.let {
+            val imageBytes = decodeBase64(it)
+            require(imageBytes.isNotEmpty() && imageBytes.size <= PantherBackup.MAX_PROFILE_IMAGE_BYTES) { "Invalid profile image data" }
+        }
+        val root = JSONObject().put("format", "panther-backup").put("version", backup.version)
+        root.put("profile", backup.profile?.let { profile ->
+            JSONObject().put("name", profile.name)
+                .put("age", profile.age ?: JSONObject.NULL).put("heightCm", profile.heightCm ?: JSONObject.NULL)
+                .put("weightKg", profile.weightKg ?: JSONObject.NULL)
+        } ?: JSONObject.NULL)
+        root.put("profileImageBase64", backup.profileImageBase64 ?: JSONObject.NULL)
+        root.put("programs", JSONArray().apply {
+            backup.programs.forEach { program ->
+                put(JSONObject().put(KEY_ORIGINAL_ID, program.originalId).put("name", program.name).put("createdAt", program.createdAt)
+                    .put("active", program.isActive).put("archived", program.isArchived).put("days", JSONArray().apply {
+                        program.days.forEach { day ->
+                            put(JSONObject().put("name", day.name).put("order", day.sortOrder).put("exercises", JSONArray().apply {
+                                day.exercises.forEach { exercise ->
+                                    put(JSONObject().put("name", exercise.name).put("order", exercise.sortOrder).put("sets", JSONArray().apply {
+                                        exercise.sets.forEach { set ->
+                                            put(JSONObject().put("number", set.setNumber).put("type", set.targetType.name)
+                                                .put("value", set.targetValue ?: JSONObject.NULL).put("minutes", set.targetMinutes ?: JSONObject.NULL)
+                                                .put("seconds", set.targetSeconds ?: JSONObject.NULL))
+                                        }
+                                    }))
+                                }
+                            }))
+                        }
+                    }))
+            }
+        })
+        return root.toString(2)
+    }
+
+    fun decode(text: String): PantherBackup {
+        require(text.toByteArray(Charsets.UTF_8).size <= PantherBackup.MAX_BACKUP_BYTES) { "Backup file is too large" }
+        val tokener = JSONTokener(text)
+        val rootObj = tokener.nextValue()
+        if (rootObj !is JSONObject) error("Invalid backup JSON")
+        val root = rootObj
+        require(tokener.nextClean() == '\u0000') { "Unexpected trailing data" }
+        require(root.getString("format") == "panther-backup") { "Not a Panther backup" }
+        val version = root.getInt("version")
+        require(version == PantherBackup.CURRENT_BACKUP_VERSION) { "Unsupported backup version" }
+        val profile = if (root.isNull("profile")) null else root.getJSONObject("profile").let {
+            UserProfile(it.getString("name"), null, it.nullableInt("age"), it.nullableDouble("heightCm"), it.nullableDouble("weightKg"))
+        }
+        val profileImageBase64 = root.nullableString("profileImageBase64")
+        profileImageBase64?.let {
+            val imageBytes = decodeBase64(it)
+            require(imageBytes.isNotEmpty() && imageBytes.size <= PantherBackup.MAX_PROFILE_IMAGE_BYTES) { "Invalid profile image data" }
+        }
+        val programsJson = root.getJSONArray("programs")
+        require(programsJson.length() <= PantherBackup.MAX_PROGRAMS) { "Too many programs" }
+        val programs = (0 until programsJson.length()).map { index ->
+            val p = programsJson.getJSONObject(index)
+            val daysJson = p.getJSONArray("days")
+            require(daysJson.length() <= PantherBackup.MAX_DAYS_PER_PROGRAM) { "Too many days" }
+            val days = (0 until daysJson.length()).map { dayIndex ->
+                val d = daysJson.getJSONObject(dayIndex)
+                val exercisesJson = d.getJSONArray("exercises")
+                require(exercisesJson.length() <= PantherBackup.MAX_EXERCISES_PER_DAY) { "Too many exercises" }
+                DayBackup(d.getString("name"), d.getInt("order"), (0 until exercisesJson.length()).map { exerciseIndex ->
+                    val e = exercisesJson.getJSONObject(exerciseIndex)
+                    val setsJson = e.getJSONArray("sets")
+                    require(setsJson.length() in 1..PantherBackup.MAX_SETS_PER_EXERCISE) { "Invalid number of sets" }
+                    ExerciseBackup(e.getString("name"), e.getInt("order"), (0 until setsJson.length()).map { setIndex ->
+                        val s = setsJson.getJSONObject(setIndex)
+                        SetBackup(s.getInt("number"), TargetType.valueOf(s.getString("type")), s.nullableInt("value"), s.nullableInt("minutes"), s.nullableInt("seconds"))
+                    })
+                })
+            }
+            ProgramBackup(p.getString("name"), p.getLong("createdAt"), p.getBoolean("active"), p.getBoolean("archived"), days,
+                originalId = p.optLong(KEY_ORIGINAL_ID, 0L))
+        }
+        return PantherBackup(version, profile, programs, profileImageBase64).also { require(WorkoutValidation.backup(it)) { "Backup contains invalid data" } }
+    }
+
+    /**
+     * Uses java.util.Base64 (available since API 26) instead of android.util.Base64 so the
+     * codec stays free of Android framework types and can be unit-tested on the JVM.
+     */
+    private fun decodeBase64(value: String): ByteArray =
+        try {
+            java.util.Base64.getDecoder().decode(value)
+        } catch (e: IllegalArgumentException) {
+            throw IllegalArgumentException("Invalid profile image data", e)
+        }
+
+    private fun JSONObject.nullableString(key: String): String? = if (isNull(key)) null else getString(key)
+    private fun JSONObject.nullableInt(key: String): Int? = if (isNull(key)) null else getInt(key)
+    private fun JSONObject.nullableDouble(key: String): Double? = if (isNull(key)) null else getDouble(key).takeIf { it.isFinite() } ?: error("Invalid number")
+}

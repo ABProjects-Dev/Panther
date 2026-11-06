@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-data class DataState<T>(val value: T, val loading: Boolean = true, val error: Boolean = false, val errorMessage: String? = null)
+data class DataState<T>(val value: T, val loading: Boolean = false, val error: Boolean = false)
 
 private suspend fun cleanupProfileImages(context: Context, keepUri: String?) {
     withContext(Dispatchers.IO) {
@@ -61,12 +61,11 @@ class ProgramsViewModel @Inject constructor(
     private val archiveProgram: ArchiveWorkoutProgramUseCase,
 ) : ViewModel() {
     val programs = observePrograms().map { DataState(it, loading = false) }
-        .catch { e -> emit(DataState(emptyList(), loading = false, error = true, errorMessage = e.localizedMessage)) }
+        .catch { e -> emit(DataState(emptyList(), loading = false, error = true)) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DataState(emptyList()))
     private val _error = MutableStateFlow(false)
     val error = _error.asStateFlow()
     private fun execute(block: suspend () -> Unit) { viewModelScope.launch { try { block(); _error.value = false } catch (e: Exception) { if (e is kotlinx.coroutines.CancellationException) throw e; _error.value = true } } }
-    fun clearError() { _error.value = false }
     fun create(name: String) = execute { createProgram(name) }
     fun rename(id: Long, name: String) = execute { updateProgram(id, name) }
     fun delete(id: Long) = execute { deleteProgram(id) }
@@ -83,13 +82,13 @@ class ProgramsViewModel @Inject constructor(
     fun reorderExercises(dayId: Long, ids: List<Long>) = execute { repository.reorderExercises(dayId, ids) }
     fun days(id: Long) = repository.observeDays(id)
         .map { DataState(it, loading = false) }
-        .catch { e -> emit(DataState(emptyList(), loading = false, error = true, errorMessage = e.localizedMessage)) }
+        .catch { e -> emit(DataState(emptyList(), loading = false, error = true)) }
     fun exercises(dayId: Long) = repository.observeExercises(dayId)
         .map { DataState(it, loading = false) }
-        .catch { e -> emit(DataState(emptyList(), loading = false, error = true, errorMessage = e.localizedMessage)) }
+        .catch { e -> emit(DataState(emptyList(), loading = false, error = true)) }
     fun sets(exerciseId: Long) = repository.observeSets(exerciseId)
         .map { DataState(it, loading = false) }
-        .catch { e -> emit(DataState(emptyList(), loading = false, error = true, errorMessage = e.localizedMessage)) }
+        .catch { e -> emit(DataState(emptyList(), loading = false, error = true)) }
 }
 
 @HiltViewModel
@@ -99,11 +98,10 @@ class ProfileViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
     val profile = observeProfile().map { DataState(it, loading = false) }
-        .catch { e -> emit(DataState(null, loading = false, error = true, errorMessage = e.localizedMessage)) }
+        .catch { e -> emit(DataState(null, loading = false, error = true)) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DataState<UserProfile?>(null))
     private val _error = MutableStateFlow(false)
     val error = _error.asStateFlow()
-    fun clearError() { _error.value = false }
     fun save(profile: UserProfile, selectedImage: Uri?) {
         viewModelScope.launch {
             var newFile: File? = null
@@ -169,7 +167,7 @@ class SettingsViewModel @Inject constructor(
             if (input == null) throw IllegalArgumentException("Invalid profile image URI")
             val imageBytes = input.use { it.readLimited(PantherBackup.MAX_PROFILE_IMAGE_BYTES + 1) }
             require(imageBytes.isNotEmpty() && imageBytes.size <= PantherBackup.MAX_PROFILE_IMAGE_BYTES) { "Profile image exceeds backup limit" }
-            android.util.Base64.encodeToString(imageBytes, android.util.Base64.NO_WRAP)
+            java.util.Base64.getEncoder().encodeToString(imageBytes)
         } }
         val json = withContext(Dispatchers.IO) { PantherBackupJson.encode(snapshot.copy(profile = snapshot.profile?.copy(profileImageUri = null), profileImageBase64 = imageBase64)) }
         withContext(Dispatchers.IO) {
@@ -202,22 +200,38 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun cancelImport() { _pendingBackup.value = null }
+
     fun restorePendingBackup() {
         val backup = _pendingBackup.value ?: return
-        _pendingBackup.value = null
-        runOperation(R.string.backup_imported) {
-            val profile = backup.profile
-            val restoredImageUri = backup.profileImageBase64?.let { encoded -> withContext(Dispatchers.IO) {
-                val bytes = android.util.Base64.decode(encoded, android.util.Base64.DEFAULT)
-                require(bytes.isNotEmpty() && bytes.size <= PantherBackup.MAX_PROFILE_IMAGE_BYTES) { "Invalid profile image" }
-                val directory = File(context.filesDir, "profile_images").apply { check(isDirectory || mkdirs()) }
-                val file = File(directory, "${UUID.randomUUID()}.image")
-                file.outputStream().use { it.write(bytes) }
-                Uri.fromFile(file).toString()
-            } }
-            val restoredProfile = profile?.let { it.copy(profileImageUri = restoredImageUri ?: it.profileImageUri) }
-            repository.restoreBackup(backup.copy(profile = restoredProfile, profileImageBase64 = null))
-            cleanupProfileImages(context, restoredProfile?.profileImageUri)
+        viewModelScope.launch {
+            var restoredImageFile: File? = null
+            try {
+                val profile = backup.profile
+                val restoredImageUri = backup.profileImageBase64?.let { encoded ->
+                    withContext(Dispatchers.IO) {
+                        val bytes = java.util.Base64.getDecoder().decode(encoded)
+                        require(bytes.isNotEmpty() && bytes.size <= PantherBackup.MAX_PROFILE_IMAGE_BYTES) { "Invalid profile image" }
+                        val directory = File(context.filesDir, "profile_images").apply { check(isDirectory || mkdirs()) }
+                        val file = File(directory, "${UUID.randomUUID()}.image")
+                        file.outputStream().use { it.write(bytes) }
+                        restoredImageFile = file
+                        Uri.fromFile(file).toString()
+                    }
+                }
+                val restoredProfile = profile?.let { it.copy(profileImageUri = restoredImageUri ?: it.profileImageUri) }
+                repository.restoreBackup(backup.copy(profile = restoredProfile, profileImageBase64 = null))
+                // Only drop the pending state once the replacement has been committed.
+                _pendingBackup.value = null
+                cleanupProfileImages(context, restoredProfile?.profileImageUri)
+                _error.value = false
+                _operationMessage.value = R.string.backup_imported
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                // Roll back the freshly written image so a failed restore leaves no orphan file.
+                restoredImageFile?.delete()
+                _error.value = true
+                _operationMessage.value = R.string.error_generic
+            }
         }
     }
 
