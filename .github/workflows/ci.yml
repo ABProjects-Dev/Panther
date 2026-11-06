@@ -37,11 +37,12 @@ jobs:
         if: failure()
         run: |
           ./gradlew :app:testDebugUnitTest --no-daemon > /tmp/gradle.log 2>&1 || true
-          grep -nE "^e: |^w: .*incompatible|Could not (resolve|find)|What went wrong|Unsupported|requires|FAILED" /tmp/gradle.log | head -14 | while IFS= read -r line; do
-            echo "::error::${line:0:900}"
-          done
-          echo "::error::LOGTAIL_START"
-          tail -c 1200 /tmp/gradle.log | while IFS= read -r line; do echo "::error::${line:0:900}"; done
+          awk '/\* What went wrong:/{f=1} f' /tmp/gradle.log | head -30 > /tmp/err.txt
+          i=0
+          while IFS= read -r line; do
+            echo "::error title=ERR$(printf '%02d' "$i")::${line:0:800}"
+            i=$((i+1))
+          done < /tmp/err.txt
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
         with:
