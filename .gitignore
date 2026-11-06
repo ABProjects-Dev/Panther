@@ -5,10 +5,12 @@ local.properties
 captures/
 .externalNativeBuild/
 .cxx/
+.kotlin/
 *.apk
 *.aab
 *.ap_
 *.dex
+*.hprof
 
 # IDE and machine-specific files
 .idea/
@@ -17,7 +19,11 @@ captures/
 *.iws
 .DS_Store
 
-# Signing material
+# Signing material — must never be committed (AGENTS.md rule 13)
 *.jks
 *.keystore
 keystore.properties
+signing.properties
+app/signing.properties
+release.jks
+app/release.jks

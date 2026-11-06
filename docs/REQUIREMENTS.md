@@ -7,7 +7,7 @@
 
 ## System Requirements
 - **Android SDK**: 36 (Compile/Target), 26 (Min)
-- **Kotlin Version**: 17
+- **Kotlin**: 2.0.21 (JVM target 17)
 - **Gradle Version**: 8.11.1
 - **Java Version**: 17 (Temurin)
 - **Compose**: Enabled
@@ -23,7 +23,7 @@
    - JSON codec with version validation (Rule 13, 14).
    - GitHub Release integration (Rule 12).
 4. **GitHub Actions**
-   - CI, Security, Build, Release, Cleanup (Rule 11).
+   - CI, Security, Build, Release and Cleanup workflows.
 
 ## Non-Functional Requirements
 1. **Security**

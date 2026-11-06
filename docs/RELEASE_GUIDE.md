@@ -2,15 +2,16 @@
 
 ## Versioning Strategy
 - **Semantic Versioning (SemVer)**: `MAJOR.MINOR.PATCH` (e.g., `v1.0.0`).
-- **versionCode**: Incremented automatically by build system or manually in `app/build.gradle.kts`.
-- **versionName**: Matches the Tag (e.g., `0.1.0` -> `v1.0.0`).
+- **versionCode**: Derived from the release tag by CI (`X*10000+Y*100+Z`); the Gradle default is 1.
+- **versionName**: Derived from the release tag (tag `v1.2.3` -> `versionName` `1.2.3`).
 
 ## Release Process
 
 ### Step 1: Preparation
-1. Ensure all features and fixes are merged into `develop` or `main`.
+1. Ensure all features and fixes are merged into `main`.
 2. Run CI checks (`ci.yml`) and ensure they pass.
-3. Update `versionCode` and `versionName` in `app/build.gradle.kts` if necessary (though Tag usually drives the release name).
+3. `versionCode`/`versionName` are derived from the tag by `release.yml`
+   (`versionName=X.Y.Z`, `versionCode=X*10000+Y*100+Z`), so no manual edit is required.
 4. Ensure GitHub Secrets are configured (see `SECRETS_SETUP.md`).
 
 ### Step 2: Tagging
@@ -41,4 +42,7 @@
 
 ## Artifact Retention
 - Official Release APKs are kept permanently in GitHub Releases.
-- Temporary build artifacts are cleaned up daily by `cleanup.yml`.
+- Temporary build artifacts are removed by `cleanup.yml` after 30 days; artifacts named
+  `panther-official-release-*` are always preserved.
+
+Language: English.

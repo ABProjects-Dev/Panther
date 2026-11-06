@@ -14,11 +14,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.panther.app.R
 import com.panther.app.core.designsystem.components.*
 import com.panther.app.core.designsystem.theme.PantherSpacing
+import com.panther.app.core.format.PantherDateFormat
 import com.panther.app.domain.model.WorkoutProgram
 import com.panther.app.domain.model.WorkoutValidation
-import java.text.DateFormat
-import java.util.Date
-import java.util.Locale
 
 @Composable
 private fun ProgramCard(program: WorkoutProgram, onClick: () -> Unit, actions: @Composable ColumnScope.() -> Unit = {}) {
@@ -27,7 +25,7 @@ private fun ProgramCard(program: WorkoutProgram, onClick: () -> Unit, actions: @
         Spacer(Modifier.height(PantherSpacing.small))
         Text(stringResource(if (program.isArchived) R.string.status_archived else if (program.isActive) R.string.status_active else R.string.status_inactive), color = MaterialTheme.colorScheme.primary)
         Text(stringResource(R.string.counts, program.dayCount, program.exerciseCount), style = MaterialTheme.typography.bodyMedium)
-        Text(stringResource(R.string.created_at, DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.forLanguageTag("fa-IR")).format(Date(program.createdAt))), style = MaterialTheme.typography.bodySmall)
+        Text(stringResource(R.string.created_at, PantherDateFormat.medium(program.createdAt)), style = MaterialTheme.typography.bodySmall)
         actions()
     }
 }

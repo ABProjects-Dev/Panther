@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Panther mark: bold "P" glyph rendered as a path so no font is required. -->
+    <path
+        android:fillColor="#C6F432"
+        android:pathData="M38,28h20c9.4,0 17,7.6 17,17s-7.6,17 -17,17h-8v18h-12zM50,40v10h8c2.8,0 5,-2.2 5,-5s-2.2,-5 -5,-5z" />
+</vector>

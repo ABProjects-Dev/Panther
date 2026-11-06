@@ -7,10 +7,10 @@
     <string name="program_name">نام برنامه</string><string name="save">ذخیره</string><string name="cancel">انصراف</string><string name="edit">ویرایش</string><string name="delete">حذف</string><string name="confirm_delete">این برنامه و همه روزها و حرکات آن حذف می‌شوند. ادامه می‌دهید؟</string>
     <string name="activate">فعال‌سازی</string><string name="deactivate">غیرفعال‌سازی</string><string name="archive">بایگانی</string><string name="unarchive">خارج کردن از بایگانی</string>
     <string name="status_active">فعال</string><string name="status_inactive">غیرفعال</string><string name="status_archived">بایگانی‌شده</string>
-    <string name="counts">%1$d روز تمرین • %2$d حرکت</string><string name="created_at">تاریخ ایجاد: %1$s</string><string name="details">جزئیات برنامه</string><string name="no_days">هنوز روز تمرینی برای این برنامه ثبت نشده است.</string>
+    <string name="counts">%1$d روز تمرین • %2$d حرکت</string><string name="created_at">تاریخ ایجاد: %1$s</string><string name="no_days">هنوز روز تمرینی برای این برنامه ثبت نشده است.</string>
     <string name="name">نام</string><string name="age">سن</string><string name="height">قد (سانتی‌متر)</string><string name="weight">وزن (کیلوگرم)</string><string name="profile_setup">اطلاعات پروفایل خود را وارد کنید.</string><string name="choose_photo">انتخاب تصویر</string><string name="avatar">تصویر پروفایل</string>
     <string name="settings">تنظیمات</string><string name="theme">ظاهر برنامه</string><string name="dark">تیره</string><string name="light">روشن</string><string name="system">مطابق سیستم</string><string name="back">بازگشت</string>
-    <string name="error_generic">عملیات انجام نشد. لطفاً دوباره تلاش کنید.</string><string name="error_name">نام باید بین ۱ تا ۱۰۰ نویسه باشد.</string><string name="error_profile">نام و مقادیر پروفایل را بررسی کنید.</string><string name="loading">در حال بارگذاری…</string><string name="close">بستن</string>
+    <string name="error_generic">عملیات انجام نشد. لطفاً دوباره تلاش کنید.</string><string name="error_name">نام باید بین ۱ تا ۱۰۰ نویسه باشد.</string><string name="error_profile">نام و مقادیر پروفایل را بررسی کنید.</string><string name="loading">در حال بارگذاری…</string>
     <string name="photo_selected">تصویر جدید انتخاب شد.</string>
     <string name="training_days">روزهای تمرین</string>
     <string name="add_day">افزودن روز</string>

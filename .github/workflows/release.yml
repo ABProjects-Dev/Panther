@@ -3,13 +3,15 @@ name: Release Official APK
 on:
   push:
     tags:
-      - 'v*.*.*' # Semantic Versioning: v1.0.0, v1.1.0, etc.
+      - 'v*.*.*' # Semantic Versioning: v1.0.0, v1.1.0, ...
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to publish (must match v*.*.*)
+        required: true
 
 permissions:
   contents: write
-  packages: write
-  actions: write
-  deployments: write
 
 concurrency:
   group: release-${{ github.ref }}
@@ -17,92 +19,109 @@ concurrency:
 
 jobs:
   validate-tag:
-    name: Validate Tag Format
+    name: Validate tag format
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+      version: ${{ steps.resolve.outputs.version }}
+      version_code: ${{ steps.resolve.outputs.version_code }}
     steps:
-      - name: Check Tag Format
+      - name: Resolve and validate tag
+        id: resolve
         run: |
-          TAG=${{ github.ref_name }}
-          if [[ ! $TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Error: Tag $TAG does not match Semantic Versioning format vX.Y.Z"
+          set -euo pipefail
+          TAG="${{ inputs.tag || github.ref_name }}"
+          if [[ ! "$TAG" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "::error::Tag $TAG does not match Semantic Versioning format vX.Y.Z"
             exit 1
           fi
+          MAJOR="${BASH_REMATCH[1]}"; MINOR="${BASH_REMATCH[2]}"; PATCH="${BASH_REMATCH[3]}"
+          # versionCode must be monotonically increasing: MAJOR*10000 + MINOR*100 + PATCH
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$MAJOR.$MINOR.$PATCH" >> "$GITHUB_OUTPUT"
+          echo "version_code=$((MAJOR * 10000 + MINOR * 100 + PATCH))" >> "$GITHUB_OUTPUT"
           echo "Tag $TAG is valid."
 
   build-and-sign-release:
-    name: Build and Sign Release APK
+    name: Build and sign release APK
     needs: validate-tag
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      # Secrets must be configured in GitHub Repository Settings
       KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
       KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
       KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
       KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      RELEASE_VERSION_NAME: ${{ needs.validate-tag.outputs.version }}
+      RELEASE_VERSION_CODE: ${{ needs.validate-tag.outputs.version_code }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
-      - uses: android-actions/setup-android@v3
-        with:
-          api-level: 36
-          build-tools: '36.0.0'
-      - name: Decode Keystore
+      - name: Decode signing material
         run: |
+          set -euo pipefail
+          if [ -z "${KEYSTORE_BASE64:-}" ]; then
+            echo "::error::KEYSTORE_BASE64 secret is not configured"
+            exit 1
+          fi
           echo "$KEYSTORE_BASE64" | base64 --decode > app/release.jks
           chmod 600 app/release.jks
-      - name: Create Signing Config
+          umask 077
+          {
+            echo "storeFile=release.jks"
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "keyPassword=$KEY_PASSWORD"
+          } > app/signing.properties
+      - name: Assemble signed release APK
+        run: ./gradlew :app:assembleRelease -PreleaseVersionName="$RELEASE_VERSION_NAME" -PreleaseVersionCode="$RELEASE_VERSION_CODE" --stacktrace
+      - name: Verify signed APK
         run: |
-          cat <<EOF > app/signing.properties
-          storeFile=release.jks
-          storePassword=$KEYSTORE_PASSWORD
-          keyAlias=$KEY_ALIAS
-          keyPassword=$KEY_PASSWORD
-          EOF
-      - name: Assemble Signed Release APK
-        run: ./gradlew :app:assembleRelease --stacktrace
-      - name: Verify Signed APK
-        run: |
+          set -euo pipefail
           APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
-          aapt dump badging $APK_PATH | grep -E "package:|versionCode:|versionName:"
-          jarsigner -verify -verbose -certs $APK_PATH
-      - name: Upload Release Artifact
+          if [ -z "$APK_PATH" ]; then echo "::error::No release APK produced"; exit 1; fi
+          AAPT=$(find "$ANDROID_HOME/build-tools" -name aapt2 | head -n 1)
+          "$AAPT" dump badging "$APK_PATH" | grep -E "package:|versionCode:|versionName:"
+          jarsigner -verify -verbose -certs "$APK_PATH"
+          echo "APK_PATH=$APK_PATH" >> "$GITHUB_ENV"
+      - name: Upload release artifact
         uses: actions/upload-artifact@v4
         with:
-          name: panther-official-release-${{ github.ref_name }}
-          path: app/build/outputs/apk/release/app-release.apk
+          name: panther-official-release-${{ needs.validate-tag.outputs.tag }}
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
           retention-days: 30
 
   publish-release:
-    name: Create GitHub Release
-    needs: build-and-sign-release
+    name: Publish GitHub release
+    needs: [ validate-tag, build-and-sign-release ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Download Signed APK
+      - name: Download signed APK
         uses: actions/download-artifact@v4
         with:
-          name: panther-official-release-${{ github.ref_name }}
+          name: panther-official-release-${{ needs.validate-tag.outputs.tag }}
           path: release-artifacts
-      - name: Create Release
+      - name: Create release and attach APK
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: Panther Release ${{ github.ref_name }}
-          body: |
-            Official release of Panther application.
-            Version: ${{ github.ref_name }}
-            Build Date: ${{ github.event.head_commit.timestamp }}
-          draft: false
+          tag_name: ${{ needs.validate-tag.outputs.tag }}
+          name: Panther Release ${{ needs.validate-tag.outputs.tag }}
+          draft: true
           prerelease: false
-      - name: Upload APK to Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: release-artifacts/app-release.apk
-          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          append_body: true
+          body: |
+            Official release of Panther.
+            Version: ${{ needs.validate-tag.outputs.version }}
+            Build date: ${{ github.event.head_commit.timestamp || github.event.repository.updated_at }}
+          files: release-artifacts/*.apk

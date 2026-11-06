@@ -8,42 +8,49 @@ import android.text.StaticLayout
 import android.text.TextDirectionHeuristics
 import android.text.TextPaint
 import com.panther.app.R
+import com.panther.app.core.format.PantherDateFormat
 import com.panther.app.domain.model.ProgramBackup
 import java.io.OutputStream
 
 object ProgramPdfExporter {
+    // A4 at 72 dpi, with a uniform text margin.
+    private const val PAGE_WIDTH = 595
+    private const val PAGE_HEIGHT = 842
+    private const val PAGE_MARGIN = 50f
+    private const val CONTENT_WIDTH = 495 // PAGE_WIDTH - 2 * PAGE_MARGIN
+    private const val TOP_BASELINE = 42f
+    private const val LINE_SPACING = 9f
+
     fun write(context: Context, program: ProgramBackup, output: OutputStream) {
         val document = PdfDocument()
         try {
             val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 12f; color = android.graphics.Color.BLACK }
             val titlePaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 20f; color = android.graphics.Color.BLACK; isFakeBoldText = true }
-            val width = 495
-            val height = 842
             var pageNumber = 1
-            var page = document.startPage(PdfDocument.PageInfo.Builder(595, height, pageNumber).create())
-            var y = 42f
+            var page = document.startPage(PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create())
+            var y = TOP_BASELINE
             fun nextPage() {
                 document.finishPage(page)
                 pageNumber++
-                page = document.startPage(PdfDocument.PageInfo.Builder(595, height, pageNumber).create())
-                y = 42f
+                page = document.startPage(PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create())
+                y = TOP_BASELINE
             }
             fun drawLine(text: String, title: Boolean = false) {
                 val paint = if (title) titlePaint else textPaint
-                val layout = StaticLayout.Builder.obtain(text, 0, text.length, paint, width)
+                val layout = StaticLayout.Builder.obtain(text, 0, text.length, paint, CONTENT_WIDTH)
                     .setAlignment(Layout.Alignment.ALIGN_NORMAL)
                     .setTextDirection(TextDirectionHeuristics.RTL)
                     .setIncludePad(false)
                     .build()
-                if (y + layout.height > height - 42f) nextPage()
+                if (y + layout.height > PAGE_HEIGHT - TOP_BASELINE) nextPage()
                 page.canvas.save()
-                page.canvas.translate(50f, y)
+                page.canvas.translate(PAGE_MARGIN, y)
                 layout.draw(page.canvas)
                 page.canvas.restore()
-                y += layout.height + 9f
+                y += layout.height + LINE_SPACING
             }
             drawLine(program.name, title = true)
-            drawLine(context.getString(R.string.created_at, java.text.DateFormat.getDateInstance().format(java.util.Date(program.createdAt))))
+            drawLine(context.getString(R.string.created_at, PantherDateFormat.medium(program.createdAt)))
             drawLine(context.getString(R.string.pdf_plan_only))
             y += 8f
             program.days.sortedBy { it.sortOrder }.forEach { day ->

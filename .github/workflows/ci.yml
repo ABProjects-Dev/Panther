@@ -2,9 +2,9 @@ name: CI - Build, Test, Lint
 
 on:
   push:
-    branches: [ main, develop, "feature/*", "fix/*", "hotfix/*" ]
+    branches: [ main, "feature/*", "fix/*", "refactor/*", "docs/*" ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
@@ -15,29 +15,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check-structure-and-lint:
-    name: Check Structure and Lint
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
-      - uses: android-actions/setup-android@v3
-        with:
-          api-level: 36
-          build-tools: '36.0.0'
-      - name: Run Lint and Check Structure
-        run: ./gradlew :app:lintDebug --stacktrace
-
-  unit-tests:
-    name: Run Unit Tests
+  lint-and-unit-tests:
+    name: Lint and unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: check-structure-and-lint
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -45,50 +26,71 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
-      - uses: android-actions/setup-android@v3
-        with:
-          api-level: 36
-          build-tools: '36.0.0'
-      - name: Run Unit Tests
-        run: ./gradlew :app:testDebugUnitTest --stacktrace
-      - name: Upload Unit Test Reports
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: unit-test-reports
-          path: app/build/reports/tests/
-          retention-days: 1
-
-  build-debug-apk:
-    name: Build Debug APK
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    needs: unit-tests
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
-      - uses: android-actions/setup-android@v3
-        with:
-          api-level: 36
-          build-tools: '36.0.0'
-      - name: Assemble Debug APK
-        run: ./gradlew :app:assembleDebug --stacktrace
-      - name: Upload Debug APK
+      # ubuntu-latest runners ship the Android SDK (platform 36 is present), so no
+      # setup-android step is required; adding one previously failed the job.
+      - name: Run unit tests, lint and assemble
+        run: ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --stacktrace
+      - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: panther-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 1
+          if-no-files-found: error
+          retention-days: 7
+      # Publish the JUnit counts into the job summary for a quick, auditable signal.
+      - name: Summarise unit test results
+        if: ${{ !cancelled() }}
+        run: |
+          python3 - <<'EOF'
+          import glob, xml.etree.ElementTree as ET, os
+          rows, total = [], dict(tests=0, failures=0, errors=0, skipped=0)
+          for f in sorted(glob.glob("app/build/test-results/testDebugUnitTest/TEST-*.xml")):
+              r = ET.parse(f).getroot()
+              d = {k: int(r.get(k, 0)) for k in total}
+              for k in total:
+                  total[k] += d[k]
+              rows.append(f"| {r.get('name')} | {d['tests']} | {d['failures']} | {d['errors']} | {d['skipped']} |")
+          out = ["### Unit test results", "", "| Suite | Tests | Failures | Errors | Skipped |", "| --- | --- | --- | --- | --- |"] + rows
+          out += ["", f"**Total: {total['tests']} tests, {total['failures']} failures, {total['errors']} errors, {total['skipped']} skipped**"]
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as fh:
+              fh.write("\n".join(out) + "\n")
+          print("\n".join(out))
+          # Also surfaced as an annotation so the counts are readable from the API.
+          print(f"::notice::unit tests executed: {total['tests']} total, {total['failures']} failures, {total['errors']} errors, {total['skipped']} skipped")
+          EOF
+      - name: Verify Room schema baseline
+        run: |
+          if [ -z "$(git status --porcelain app/schemas)" ]; then
+            echo "Room schema matches the committed baseline."
+          else
+            echo "::error::app/schemas is stale. Regenerate and commit the schema."
+            git --no-pager diff --stat app/schemas
+            exit 1
+          fi
+
+      - name: Upload Room schema
+        uses: actions/upload-artifact@v4
+        with:
+          name: room-schema
+          path: app/schemas/
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Upload test and lint reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-check-reports
+          path: |
+            app/build/reports/tests/
+            app/build/reports/lint-results-debug.html
+          if-no-files-found: ignore
+          retention-days: 7
 
   instrumentation-tests:
-    name: Instrumentation Tests
+    name: Instrumentation tests
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    needs: build-debug-apk
+    needs: lint-and-unit-tests
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -96,11 +98,12 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
-      - uses: android-actions/setup-android@v3
-        with:
-          api-level: 36
-          build-tools: '36.0.0'
-      - name: Run Instrumented Tests
+      - name: Enable KVM for the Android emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Run instrumentation tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 29
@@ -108,10 +111,11 @@ jobs:
           target: google_apis
           disable-animations: true
           script: ./gradlew :app:connectedDebugAndroidTest --stacktrace
-      - name: Upload Instrumentation Reports
+      - name: Upload instrumentation reports
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: instrumentation-reports
           path: app/build/reports/androidTests/
-          retention-days: 1
+          if-no-files-found: ignore
+          retention-days: 7
