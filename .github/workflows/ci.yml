@@ -28,20 +28,15 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: PROBE
         run: |
-          echo "ANDROID_HOME=${ANDROID_HOME:-unset} SDK_ROOT=${ANDROID_SDK_ROOT:-unset}"
-          ls "${ANDROID_HOME:-/x}/platforms" 2>/dev/null | tr '\n' ' ' || true
-          which sdkmanager || echo "no sdkmanager"
-      - name: SETUP_ANDROID
-        id: sa
-        continue-on-error: true
-        uses: android-actions/setup-android@v3
-      - name: REPORT_SETUP
-        run: |
-          echo "::error::setup-android outcome=${{ steps.sa.outcome }} ANDROID_HOME=${ANDROID_HOME:-unset}"
-          ls "${ANDROID_HOME:-/x}/platforms" 2>/dev/null | tr '\n' ' ' || true
-          which sdkmanager || echo "no sdkmanager after setup"
-      - name: Install Android SDK 36
-        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          echo "SDK=$SDK"
+          echo "platforms: $(ls "$SDK/platforms" 2>/dev/null | tr '\n' ' ')"
+          echo "build-tools: $(ls "$SDK/build-tools" 2>/dev/null | tr '\n' ' ')"
+          echo "cmdline-tools: $(ls "$SDK/cmdline-tools" 2>/dev/null | tr '\n' ' ')"
+          for c in "$SDK/cmdline-tools/latest/bin/sdkmanager" "$SDK/cmdline-tools/bin/sdkmanager" "$SDK/tools/bin/sdkmanager"; do
+            [ -x "$c" ] && echo "FOUND=$c"
+          done
+          echo "::error::platforms=[$(ls "$SDK/platforms" 2>/dev/null | tr '\n' ' ')] cmdline=[$(ls "$SDK/cmdline-tools" 2>/dev/null | tr '\n' ' ')]"
       - name: Run unit tests and lint
         run: ./gradlew :app:testDebugUnitTest :app:lintDebug --stacktrace
       - name: Upload test and lint reports
