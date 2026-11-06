@@ -17,6 +17,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Compares the dependency changes in a pull request against the GitHub Advisory
+  # Database and fails the check when a change introduces a high-severity advisory.
+  # Requires the repository setting "Dependency graph" to be enabled; when it is
+  # disabled the action reports a configuration error instead of reviewing the graph.
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@v5.0.0
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
+
   dependency-audit:
     name: Dependency audit
     runs-on: ubuntu-latest

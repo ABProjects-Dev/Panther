@@ -18,13 +18,16 @@ least-privilege `permissions`.
 
 ### 2. `security.yml` — Security Scan
 - **Trigger:** push/PR to `main`, weekly schedule (Monday 03:00 UTC), manual dispatch.
-- **Jobs:** `dependency-audit`.
-- Resolves the real `debugRuntimeClasspath` dependency graph, uploads it as an artifact and
-  submits it to the GitHub dependency graph via `gradle/actions/dependency-submission@v4`.
-- Passing pull requests are also gated by `actions/dependency-review-action@v4` (fails on
-  high-severity advisories).
-- The graph submission is advisory (`continue-on-error`) because it needs the repository
-  setting *Settings → Code security → Dependency graph*, which an owner must enable.
+- **Jobs:** `dependency-review` (pull requests only) and `dependency-audit`.
+- `dependency-review` uses `actions/dependency-review-action@v5` and fails the check when the
+  pull request adds a dependency with a high-severity advisory, then comments the summary on
+  the pull request. It is pinned to `v5.0.0` because this action publishes no moving `v5` tag.
+- `dependency-audit` resolves the real `debugRuntimeClasspath` dependency graph, uploads it
+  as an artifact and submits it to the GitHub dependency graph via
+  `gradle/actions/dependency-submission@v4`.
+- Both jobs read the dependency graph, which needs the repository setting
+  *Settings → Code security → Dependency graph*. An owner must enable it; the submission
+  step is therefore advisory (`continue-on-error`).
 
 ### 3. `build.yml` — Release Candidate
 - **Trigger:** push to `main` (Markdown/docs-only changes ignored), manual dispatch.
