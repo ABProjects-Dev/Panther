@@ -26,7 +26,20 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
-      - uses: android-actions/setup-android@v3
+      - name: PROBE
+        run: |
+          echo "ANDROID_HOME=${ANDROID_HOME:-unset} SDK_ROOT=${ANDROID_SDK_ROOT:-unset}"
+          ls "${ANDROID_HOME:-/x}/platforms" 2>/dev/null | tr '\n' ' ' || true
+          which sdkmanager || echo "no sdkmanager"
+      - name: SETUP_ANDROID
+        id: sa
+        continue-on-error: true
+        uses: android-actions/setup-android@v3
+      - name: REPORT_SETUP
+        run: |
+          echo "::error::setup-android outcome=${{ steps.sa.outcome }} ANDROID_HOME=${ANDROID_HOME:-unset}"
+          ls "${ANDROID_HOME:-/x}/platforms" 2>/dev/null | tr '\n' ' ' || true
+          which sdkmanager || echo "no sdkmanager after setup"
       - name: Install Android SDK 36
         run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
       - name: Run unit tests and lint
