@@ -33,6 +33,12 @@ jobs:
       # setup-android step is required; adding one previously failed the job.
       - name: Run unit tests, lint and assemble
         run: ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --stacktrace
+      - name: Show Gradle failure details
+        if: failure()
+        run: |
+          echo "::error::Gradle failed. Dumping the first error lines."
+          find app/build -name '*.log' 2>/dev/null | head
+          ./gradlew :app:testDebugUnitTest --no-daemon 2>&1 | grep -A12 -iE 'FAILURE|error:|What went wrong' | head -40 || true
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
         with:
