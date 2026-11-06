@@ -28,7 +28,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       # ubuntu-latest runners ship the Android SDK (platform 36 is present), so no
       # setup-android step is required; adding one previously failed the job.
       - name: Run unit tests, lint and assemble
@@ -102,7 +102,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
 
       # The emulator is by far the slowest step, and it can only be broken by
       # Kotlin or resource changes. Documentation, assets and workflow edits skip

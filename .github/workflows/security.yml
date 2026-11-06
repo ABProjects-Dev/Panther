@@ -67,7 +67,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
 
       # Resolves the real dependency graph so the report reflects shipped versions.
       - name: Resolve dependency graph
@@ -88,7 +88,7 @@ jobs:
       # currently disabled, so the step is advisory and must not fail the build.
       - name: Submit dependency graph (advisory)
         continue-on-error: true
-        uses: gradle/actions/dependency-submission@v4
+        uses: gradle/actions/dependency-submission@v6
 
       - name: Report dependency graph availability
         run: |

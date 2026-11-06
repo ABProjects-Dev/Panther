@@ -26,7 +26,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Assemble release candidate
         run: ./gradlew :app:assembleRelease --stacktrace
       - name: Upload release candidate APK
