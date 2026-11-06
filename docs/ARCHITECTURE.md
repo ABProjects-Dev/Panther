@@ -29,7 +29,7 @@ The Panther project is an Android application built with Kotlin, Jetpack Compose
 
 ## GitHub Actions Architecture
 - **CI**: Lint, unit tests, debug APK, instrumentation tests (ci.yml)
-- **Security**: OWASP dependency vulnerability scan (security.yml)
+- **Security**: Dependency review and dependency-graph submission (security.yml)
 - **Build**: Release candidate APK on `main` (build.yml)
 - **Release**: Signed official release on `v*.*.*` tags (release.yml)
 - **Cleanup**: Artifact retention management (cleanup.yml)

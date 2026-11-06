@@ -11,16 +11,20 @@ least-privilege `permissions`.
 ### 1. `ci.yml` — Continuous Integration
 - **Trigger:** push to `main`, `feature/*`, `fix/*`, `refactor/*`, `docs/*`;
   pull requests to `main`; manual dispatch.
-- **Jobs:** `lint-and-unit-tests` → `build-debug-apk` → `instrumentation-tests`.
-- **Artifacts:** `panther-debug-apk`, `android-check-reports`, `instrumentation-reports`
-  (retention: 7 days).
+- **Jobs:** `lint-and-unit-tests` → `instrumentation-tests` (lint, unit tests, the debug APK
+  and the Room schema check share one Gradle invocation).
+- **Artifacts:** `panther-debug-apk`, `android-check-reports`, `room-schema`,
+  `instrumentation-reports` (retention: 7 days).
 
 ### 2. `security.yml` — Security Scan
 - **Trigger:** push/PR to `main`, weekly schedule (Monday 03:00 UTC), manual dispatch.
-- **Jobs:** `dependency-vulnerability-check` using the official
-  `dependency-check/DependencyCheck@v6` action (OWASP), SARIF output published to
-  GitHub code scanning via `github/codeql-action/upload-sarif@v3`.
-- **Fails** the build on CVSS ≥ 7.
+- **Jobs:** `dependency-audit`.
+- Resolves the real `debugRuntimeClasspath` dependency graph, uploads it as an artifact and
+  submits it to the GitHub dependency graph via `gradle/actions/dependency-submission@v4`.
+- Passing pull requests are also gated by `actions/dependency-review-action@v4` (fails on
+  high-severity advisories).
+- The graph submission is advisory (`continue-on-error`) because it needs the repository
+  setting *Settings → Code security → Dependency graph*, which an owner must enable.
 
 ### 3. `build.yml` — Release Candidate
 - **Trigger:** push to `main` (Markdown/docs-only changes ignored), manual dispatch.
@@ -66,8 +70,11 @@ incorrect and have been corrected.
 
 ## Troubleshooting
 
-- **`setup-android` fails:** this action accepts `packages`, not `api-level`/`build-tools`;
-  SDK components are installed with an explicit `sdkmanager` step.
+- **No Android SDK setup step is needed:** `ubuntu-latest` runners already ship the Android
+  SDK (API 36 with `cmdline-tools/latest`). `android-actions/setup-android@v3` was removed
+  because it fails on this runner image and was masking the real Gradle failure.
+- **Room schema check fails:** `app/schemas` is out of date. Run a build, then commit the
+  regenerated schema as the new baseline.
 - **Signing failure:** verify the four secrets exist and `KEYSTORE_BASE64` is valid Base64.
 - **Release candidate fails:** inspect the `assembleRelease` output; minification is enabled
   in release builds, so keep ProGuard rules current.

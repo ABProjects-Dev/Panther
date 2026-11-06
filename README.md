@@ -57,17 +57,18 @@ On Windows use `gradlew.bat`. Alternatively open the root directory in Android S
 
 The MVP includes the four-destination shell and dashboard; local profile editing with Photo Picker; program creation, editing, activation, archive and confirmed deletion; training-day and exercise editing/reordering; independent repetition or duration targets per set; persisted theme selection; validated JSON backup/restore; and per-program PDF export. Program history is a list of programs, not workout tracking. Backup files are chosen through Android's Storage Access Framework; importing validates the complete file and asks before replacing local data. Profile images are included in backup files with a 5 MB image limit. Android automatic backup remains disabled.
 
-**Verification status:** the Gradle build, unit tests, instrumentation tests and device UI
-checks have not yet been executed successfully in CI. Unit tests for the backup codec run on
-the JVM; Room and UI tests require an emulator. Room schema export is configured to
-`app/schemas`, and the first generated schema must be committed after a successful build.
+**Verification status:** the CI pipeline is green on
+`arena/acfba818-panther`: `:app:testDebugUnitTest`, `:app:lintDebug` and
+`:app:assembleDebug` pass (16 unit tests, 0 failures), the debug APK is produced, and the
+instrumentation tests run on an API 29 emulator. `app/schemas` holds the Room schema
+baseline (version 1), and CI fails if a schema change is not committed.
 
 ## GitHub Actions
 
 Android CI runs on pull requests, pushes to any branch, and manual dispatch. It builds a debug APK, runs unit tests and lint, and runs instrumented tests on an API 29 emulator. Download `panther-debug-apk` from the build run's artifacts; it is a debug-signed build, not a release APK. Test reports are uploaded when available.
 
 Five workflows are defined: `ci.yml` (lint, unit tests, debug APK, instrumentation),
-`security.yml` (OWASP dependency scan), `build.yml` (release candidate from `main`),
+`security.yml` (dependency review and dependency-graph submission), `build.yml` (release candidate from `main`),
 `release.yml` (signed release on `v*.*.*` tags) and `cleanup.yml` (artifact retention).
 See [docs/GITHUB_ACTIONS.md](docs/GITHUB_ACTIONS.md) for the authoritative description.
 
