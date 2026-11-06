@@ -58,10 +58,15 @@ jobs:
           # Also surfaced as an annotation so the counts are readable from the API.
           print(f"::notice::unit tests executed: {total['tests']} total, {total['failures']} failures, {total['errors']} errors, {total['skipped']} skipped")
           EOF
-      - name: Print Room schema (temporary)
+      - name: Print Room schema (temporary, chunked)
         run: |
-          for f in app/schemas/*/*.json; do
-            [ -f "$f" ] && echo "::notice title=ROOMSCHEMA $(basename $(dirname $f))::$(base64 -w0 "$f")"
+          F=$(ls app/schemas/*/*.json | head -n1)
+          echo "file=$F chars=$(wc -c < "$F")"
+          B=$(base64 -w0 "$F")
+          i=0
+          echo "$B" | fold -w 1800 | while read -r chunk; do
+            echo "::notice title=RMCHUNK$i::$chunk"
+            i=$((i+1))
           done
       - name: Upload Room schema
         uses: actions/upload-artifact@v4
