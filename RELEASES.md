@@ -3,19 +3,18 @@
 ## Official Releases (Rule 12)
 Releases are managed via GitHub Actions (`release.yml`) and tagged with Semantic Versioning (Rule 9).
 
-### v1.0.0 (Planned)
-- **Date**: TBD
+### v1.0.0
+- **Date**: 2026-11-07
 - **Tag**: `v1.0.0`
 - **Artifact**: `panther-official-release-v1.0.0.apk`
 - **Notes**: First stable release with full CI/CD support.
 - **Signature**: Verified via GitHub Secrets (Rule 13).
+- **Status**: Built and signed by `release.yml`; the GitHub Release is created as a
+  draft and published manually by the project owner.
 
-### No published releases yet
-- No Git tags and no GitHub Releases exist at the time of writing.
-- `versionName` is `0.1.0` in `app/build.gradle.kts`, but this is a pre-release baseline that
-  has never been tagged or built with a green CI run.
-- The first published release will be created by `release.yml` and must be approved by the
-  project owner (AGENTS.md section 17).
+### Release history
+- `v1.0.0` is the first tagged release. Earlier commits had no tags and no GitHub
+  Releases; `v0.1.0` was a pre-release baseline that was never tagged.
 
 ## Release Policy (Rule 12)
 - Use Git tags for releases.
