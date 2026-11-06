@@ -30,7 +30,7 @@ jobs:
       - name: Assemble release candidate
         run: ./gradlew :app:assembleRelease --stacktrace
       - name: Upload release candidate APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: panther-release-candidate-apk
           path: app/build/outputs/apk/release/*.apk

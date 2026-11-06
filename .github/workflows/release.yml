@@ -91,7 +91,7 @@ jobs:
           jarsigner -verify -verbose -certs "$APK_PATH"
           echo "APK_PATH=$APK_PATH" >> "$GITHUB_ENV"
       - name: Upload release artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: panther-official-release-${{ needs.validate-tag.outputs.tag }}
           path: app/build/outputs/apk/release/*.apk
