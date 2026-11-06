@@ -27,9 +27,6 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
-      - uses: android-actions/setup-android@v3
-      - name: Install Android SDK 36
-        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
       - name: Assemble release candidate
         run: ./gradlew :app:assembleRelease --stacktrace
       - name: Upload release candidate APK
@@ -42,5 +39,6 @@ jobs:
       - name: Verify APK metadata
         run: |
           APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
-          AAPT=$(find "$ANDROID_HOME/build-tools" -name aapt2 | head -n 1)
+          test -n "$APK_PATH" || { echo "No release APK produced"; exit 1; }
+          AAPT=$(find "${ANDROID_HOME}/build-tools" -name aapt2 | head -n 1)
           "$AAPT" dump badging "$APK_PATH" | grep -E "package:|versionCode:|versionName:"

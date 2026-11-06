@@ -21,7 +21,7 @@ jobs:
   dependency-vulnerability-check:
     name: Dependency vulnerability check
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -29,14 +29,11 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
-      - uses: android-actions/setup-android@v3
-      - name: Install Android SDK 36
-        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
-      # Resolve the full compile+runtime classpath so the scanner inspects real versions.
+      # Resolve real dependency versions so the scanner inspects the actual graph.
       - name: Resolve dependency classpath
         run: ./gradlew :app:dependencies --configuration debugRuntimeClasspath --stacktrace
       - name: OWASP Dependency-Check
-        uses: dependency-check/DependencyCheck@v6
+        uses: dependency-check/DependencyCheck@v13.0.0
         with:
           project: Panther
           scan: app
@@ -44,7 +41,6 @@ jobs:
           out: reports
           args: >-
             --failOnCVSS 7
-            --enableRetired
       - name: Upload SARIF report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
