@@ -1,6 +1,9 @@
 # Panther Project Changelog
 
-## [Unreleased]
+## [v1.0.0] - 2026-11-07
+
+First stable release. The application builds, is signed, and ships with a green
+CI pipeline (unit tests, lint, debug APK, and instrumentation tests on an emulator).
 
 ### Fixed
 - **2026-11-06**: Restored `PantherBackupJson.kt`, which had been flattened into three
