@@ -34,7 +34,7 @@ jobs:
       - name: Run unit tests, lint and assemble
         run: ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --stacktrace
       - name: Upload debug APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: panther-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
@@ -72,7 +72,7 @@ jobs:
           fi
 
       - name: Upload Room schema
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: room-schema
           path: app/schemas/
@@ -80,7 +80,7 @@ jobs:
           retention-days: 7
       - name: Upload test and lint reports
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: android-check-reports
           path: |
@@ -146,7 +146,7 @@ jobs:
 
       - name: Upload instrumentation reports
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: instrumentation-reports
           path: app/build/reports/androidTests/
