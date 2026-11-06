@@ -17,27 +17,39 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Resolves the real dependency graph and publishes it, so Dependabot can raise
-  # vulnerability alerts for the exact versions this project builds against.
-  dependency-graph:
-    name: Dependency graph and report
+  dependency-audit:
+    name: Dependency audit
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/dependency-submission@v4
-      - name: Upload resolved dependency report
-        if: ${{ !cancelled() }}
+      - uses: gradle/actions/setup-gradle@v4
+
+      # Resolves the real dependency graph so the report reflects shipped versions.
+      - name: Resolve dependency graph
+        run: ./gradlew :app:dependencies --configuration debugRuntimeClasspath
+
+      - name: Save dependency report
         run: ./gradlew :app:dependencies --configuration debugRuntimeClasspath > dependencies.txt
-      - uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
+
+      - name: Archive dependency report
+        uses: actions/upload-artifact@v4
         with:
           name: gradle-dependency-report
           path: dependencies.txt
-          retention-days: 14
+          retention-days: 30
+
+      # Publishes the graph for Dependabot vulnerability alerts. This requires the
+      # repository setting "Dependency graph" to be enabled by an owner; it is
+      # currently disabled, so the step is advisory and must not fail the build.
+      - name: Submit dependency graph (advisory)
+        continue-on-error: true
+        uses: gradle/actions/dependency-submission@v4
+
+      - name: Report dependency graph availability
+        run: |
+          echo "::notice::Automated vulnerability alerts require Settings > Code security > Dependency graph to be enabled by a repository owner."
