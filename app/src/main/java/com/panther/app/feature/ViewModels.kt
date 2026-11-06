@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.panther.app.R
 import com.panther.app.core.settings.ThemeChoice
 import com.panther.app.core.settings.ThemePreferences
 import com.panther.app.data.backup.PantherBackupJson
@@ -86,9 +87,10 @@ class ProgramsViewModel @Inject constructor(
     fun exercises(dayId: Long) = repository.observeExercises(dayId)
         .map { DataState(it, loading = false) }
         .catch { e -> emit(DataState(emptyList(), loading = false, error = true)) }
+    // Set targets are only rendered as a count and inside the editor, so a plain list is
+    // sufficient; failures degrade to an empty list instead of breaking the editor.
     fun sets(exerciseId: Long) = repository.observeSets(exerciseId)
-        .map { DataState(it, loading = false) }
-        .catch { e -> emit(DataState(emptyList(), loading = false, error = true)) }
+        .catch { e -> if (e is kotlinx.coroutines.CancellationException) throw e; emit(emptyList()) }
 }
 
 @HiltViewModel
