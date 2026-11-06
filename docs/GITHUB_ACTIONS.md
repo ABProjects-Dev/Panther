@@ -24,7 +24,7 @@ least-privilege `permissions`.
   the pull request. It is pinned to `v5.0.0` because this action publishes no moving `v5` tag.
 - `dependency-audit` resolves the real `debugRuntimeClasspath` dependency graph, uploads it
   as an artifact and submits it to the GitHub dependency graph via
-  `gradle/actions/dependency-submission@v4`.
+  `gradle/actions/dependency-submission@v6`.
 - Both jobs read the dependency graph, which needs the repository setting
   *Settings → Code security → Dependency graph*. An owner must enable it; the submission
   step is therefore advisory (`continue-on-error`).
