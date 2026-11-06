@@ -37,6 +37,25 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 7
+      # Publish the JUnit counts into the job summary for a quick, auditable signal.
+      - name: Summarise unit test results
+        if: ${{ !cancelled() }}
+        run: |
+          python3 - <<'EOF'
+          import glob, xml.etree.ElementTree as ET, os
+          rows, total = [], dict(tests=0, failures=0, errors=0, skipped=0)
+          for f in sorted(glob.glob("app/build/test-results/testDebugUnitTest/TEST-*.xml")):
+              r = ET.parse(f).getroot()
+              d = {k: int(r.get(k, 0)) for k in total}
+              for k in total:
+                  total[k] += d[k]
+              rows.append(f"| {r.get('name')} | {d['tests']} | {d['failures']} | {d['errors']} | {d['skipped']} |")
+          out = ["### Unit test results", "", "| Suite | Tests | Failures | Errors | Skipped |", "| --- | --- | --- | --- | --- |"] + rows
+          out += ["", f"**Total: {total['tests']} tests, {total['failures']} failures, {total['errors']} errors, {total['skipped']} skipped**"]
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as fh:
+              fh.write("\n".join(out) + "\n")
+          print("\n".join(out))
+          EOF
       - name: Upload test and lint reports
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
