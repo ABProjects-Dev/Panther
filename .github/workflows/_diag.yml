@@ -1,0 +1,26 @@
+name: DIAG (temporary)
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe preinstalled SDK
+        run: |
+          echo "ANDROID_HOME=${ANDROID_HOME:-unset}"
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-unset}"
+          echo "java=${JAVA_HOME:-unset}"
+          ls -d /usr/local/lib/android/sdk 2>/dev/null || echo "no /usr/local/lib/android/sdk"
+          ls "${ANDROID_HOME:-/usr/local/lib/android/sdk}/platforms" 2>/dev/null || echo "no platforms dir"
+          echo "::notice::ANDROID_HOME=${ANDROID_HOME:-unset} SDKROOT=${ANDROID_SDK_ROOT:-unset}"
+      - name: Try setup-android v3
+        id: sa
+        continue-on-error: true
+        uses: android-actions/setup-android@v3
+      - name: Report setup-android outcome
+        run: |
+          echo "setup-android outcome = ${{ steps.sa.outcome }}"
+          echo "::error::setup-android outcome = ${{ steps.sa.outcome }}"
+          ls "${ANDROID_HOME:-/usr/local/lib/android/sdk}/platforms" 2>/dev/null || echo "no platforms after setup"
+          which sdkmanager || echo "sdkmanager not on PATH"
