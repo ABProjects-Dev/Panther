@@ -26,19 +26,17 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
-      - name: PROBE
-        run: |
-          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
-          echo "SDK=$SDK"
-          echo "platforms: $(ls "$SDK/platforms" 2>/dev/null | tr '\n' ' ')"
-          echo "build-tools: $(ls "$SDK/build-tools" 2>/dev/null | tr '\n' ' ')"
-          echo "cmdline-tools: $(ls "$SDK/cmdline-tools" 2>/dev/null | tr '\n' ' ')"
-          for c in "$SDK/cmdline-tools/latest/bin/sdkmanager" "$SDK/cmdline-tools/bin/sdkmanager" "$SDK/tools/bin/sdkmanager"; do
-            [ -x "$c" ] && echo "FOUND=$c"
-          done
-          echo "::error::platforms=[$(ls "$SDK/platforms" 2>/dev/null | tr '\n' ' ')] cmdline=[$(ls "$SDK/cmdline-tools" 2>/dev/null | tr '\n' ' ')]"
       - name: Run unit tests and lint
-        run: ./gradlew :app:testDebugUnitTest :app:lintDebug --stacktrace
+        run: |
+          set +e
+          ./gradlew :app:testDebugUnitTest :app:lintDebug --stacktrace > gradle.log 2>&1
+          STATUS=$?
+          if [ $STATUS -ne 0 ]; then
+            grep -nE "e: |error:|FAILED|Execution failed|Could not resolve|Caused by" gradle.log | head -25 | while IFS= read -r line; do
+              echo "::error::$line"
+            done
+          fi
+          exit $STATUS
       - name: Upload test and lint reports
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
