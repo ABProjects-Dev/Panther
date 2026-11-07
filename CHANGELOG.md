@@ -3,6 +3,12 @@
 ## [Unreleased]
 
 ### Removed
+- **2026-11-07**: Deleted `.github/dependabot.yml`. Dependency versions and GitHub
+  Action versions are now updated manually. Nothing else changes: Dependabot
+  security alerts were never active here because they depend on the repository
+  setting *Dependency graph*, which is disabled (the SBOM endpoint answers 404),
+  not on this configuration file. Re-enabling that setting would restore alerts
+  even without the file.
 - **2026-11-07**: Deleted the `build.yml` (release candidate), `security.yml`
   (dependency review and dependency-graph submission) and `cleanup.yml` (artifact
   retention) workflows. The pipeline is now `ci.yml` for validation and
