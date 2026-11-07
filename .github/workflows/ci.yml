@@ -31,8 +31,26 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
       # ubuntu-latest runners ship the Android SDK (platform 36 is present), so no
       # setup-android step is required; adding one previously failed the job.
+      # TEMPORARY probe step (diagnosing the dependency bump failures).
+      # Captures the Gradle output so the real error survives into the
+      # annotations channel instead of a bare "exit code 1".
       - name: Run unit tests, lint and assemble
-        run: ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --stacktrace
+        id: gradle
+        run: |
+          set -o pipefail
+          ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --stacktrace 2>&1 | tee gradle-output.log
+      - name: Publish Gradle failure details
+        if: failure() && steps.gradle.outcome == 'failure'
+        run: |
+          python3 - <<'EOF'
+          import os
+          if not os.path.exists("gradle-output.log"):
+              raise SystemExit(0)
+          lines = [l.rstrip() for l in open("gradle-output.log", encoding="utf-8", errors="replace") if l.strip()]
+          for i, line in enumerate(lines[-40:]):
+              safe = line.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+              print(f"::error title=GRADLE{i:02d}::{safe}")
+          EOF
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
         with:
