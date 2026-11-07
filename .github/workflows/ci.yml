@@ -44,12 +44,25 @@ jobs:
         run: |
           python3 - <<'EOF'
           import os
+
+          def safe(text):
+              return text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+
           if not os.path.exists("gradle-output.log"):
               raise SystemExit(0)
           lines = [l.rstrip() for l in open("gradle-output.log", encoding="utf-8", errors="replace") if l.strip()]
-          for i, line in enumerate(lines[-40:]):
-              safe = line.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
-              print(f"::error title=GRADLE{i:02d}::{safe}")
+
+          # Kotlin/Gradle error lines carry the real diagnosis; the stack trace does not.
+          errs = [l for l in lines if l.startswith("e: ") or "What went wrong" in l or l.startswith("FAILURE:")]
+          seen, unique = set(), []
+          for l in errs:
+              if l not in seen:
+                  seen.add(l)
+                  unique.append(l)
+          for i, line in enumerate(unique[:20]):
+              print(f"::error title=KERR{i:02d}::{safe(line)}")
+          for i, line in enumerate(lines[-10:]):
+              print(f"::error title=TAIL{i:02d}::{safe(line)}")
           EOF
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
