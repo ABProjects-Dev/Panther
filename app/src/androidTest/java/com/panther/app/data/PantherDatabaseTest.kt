@@ -42,25 +42,22 @@ class PantherDatabaseTest {
     fun close() = db.close()
 
     @Test
-    fun programsCanBeCreatedUpdatedActivatedSwitchedArchivedAndDeleted() = runTest {
+    fun programsCanBeCreatedUpdatedActivatedSwitchedDeactivatedAndDeleted() = runTest {
         val first = repository.createProgram("First")
         val second = repository.createProgram("Second")
         repository.renameProgram(first, "Updated")
         assertEquals("Updated", repository.observePrograms().first().first { it.id == first }.name)
 
         repository.activateProgram(first)
+        assertEquals(listOf(first), repository.observePrograms().first().filter { it.isActive }.map { it.id })
+
+        // Activating a second program automatically deactivates the previous one.
         repository.activateProgram(second)
         var programs = repository.observePrograms().first()
         assertEquals(listOf(second), programs.filter { it.isActive }.map { it.id })
 
-        repository.archiveProgram(second, true)
-        try {
-            repository.activateProgram(second)
-            fail("Archived program should not activate")
-        } catch (_: IllegalStateException) {
-        }
+        repository.deactivateProgram(second)
         programs = repository.observePrograms().first()
-        assertTrue(programs.first { it.id == second }.isArchived)
         assertFalse(programs.any { it.isActive })
 
         repository.deleteProgram(first)
@@ -91,7 +88,7 @@ class PantherDatabaseTest {
     }
 
     @Test
-    fun orderingIsTransactional() = runTest {
+    fun dayAndExerciseOrderingAreTransactionalAndPersistent() = runTest {
         val program = repository.createProgram("Plan")
         val a = repository.addDay(program, "A", 0)
         val b = repository.addDay(program, "B", 1)
@@ -103,6 +100,12 @@ class PantherDatabaseTest {
         } catch (_: IllegalArgumentException) {
         }
         assertEquals(listOf(b, a), repository.observeDays(program).first().map { it.id })
+
+        val ex1 = repository.addExercise(a, "Squat", 0)
+        val ex2 = repository.addExercise(a, "Lunge", 1)
+        val ex3 = repository.addExercise(a, "Calf Raise", 2)
+        repository.reorderExercises(a, listOf(ex3, ex1, ex2))
+        assertEquals(listOf(ex3, ex1, ex2), repository.observeExercises(a).first().map { it.id })
     }
 
     /** Regression test for the originalId key mismatch that broke restore/export round-trips. */
@@ -123,13 +126,17 @@ class PantherDatabaseTest {
             profile = UserProfile("Restored", age = 31),
             programs = listOf(
                 ProgramBackup(
-                    "New plan", System.currentTimeMillis(), true, false,
+                    "New plan",
+                    System.currentTimeMillis(),
+                    true,
                     listOf(
                         DayBackup(
-                            "Day A", 0,
+                            "Day A",
+                            0,
                             listOf(
                                 ExerciseBackup(
-                                    "Squat", 0,
+                                    "Squat",
+                                    0,
                                     listOf(
                                         SetBackup(1, TargetType.REPS, 8, null, null),
                                         SetBackup(2, TargetType.DURATION, null, 1, 30),
@@ -158,14 +165,22 @@ class PantherDatabaseTest {
         val program = repository.createProgram("Plan")
         val day = repository.addDay(program, "Day", 0)
         repository.saveExercise(
-            day, null, "Press", 0, listOf(
+            day,
+            null,
+            "Press",
+            0,
+            listOf(
                 ExerciseSet(exerciseId = 0, setNumber = 1, targetType = TargetType.REPS, targetValue = 5),
                 ExerciseSet(exerciseId = 0, setNumber = 2, targetType = TargetType.REPS, targetValue = 9),
             ),
         )
         val exercise = repository.observeExercises(day).first().single()
         repository.saveExercise(
-            day, exercise.id, "Bench press", 0, listOf(
+            day,
+            exercise.id,
+            "Bench press",
+            0,
+            listOf(
                 ExerciseSet(exerciseId = exercise.id, setNumber = 1, targetType = TargetType.REPS, targetValue = 7),
                 ExerciseSet(exerciseId = exercise.id, setNumber = 2, targetType = TargetType.REPS, targetValue = 11),
             ),

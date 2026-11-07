@@ -16,4 +16,4 @@ data class ExerciseEntity(@PrimaryKey(autoGenerate = true) val id: Long = 0, val
 @Entity(tableName = "exercise_sets", foreignKeys = [ForeignKey(entity = ExerciseEntity::class, parentColumns = ["id"], childColumns = ["exerciseId"], onDelete = ForeignKey.CASCADE)], indices = [Index(value = ["exerciseId", "setNumber"], unique = true)])
 data class ExerciseSetEntity(@PrimaryKey(autoGenerate = true) val id: Long = 0, val exerciseId: Long, val setNumber: Int, val targetType: String, val targetValue: Int?, val targetMinutes: Int?, val targetSeconds: Int?)
 
-data class ProgramSummaryRow(val id: Long, val name: String, val createdAt: Long, val isActive: Boolean, val isArchived: Boolean, val dayCount: Int, val exerciseCount: Int)
+data class ProgramSummaryRow(val id: Long, val name: String, val createdAt: Long, val isActive: Boolean, val dayCount: Int, val exerciseCount: Int)

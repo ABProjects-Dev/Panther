@@ -13,8 +13,10 @@ class MainActivityTest {
     @get:Rule val composeRule = createAndroidComposeRule<MainActivity>()
 
     @Test
-    fun launchShowsFoundationMessage() {
+    fun launchShowsPantherBrandAndFoundationMessage() {
+        val appName = composeRule.activity.getString(R.string.app_name)
         val message = composeRule.activity.getString(R.string.foundation_message)
+        composeRule.onNodeWithText(appName).assertIsDisplayed()
         composeRule.onNodeWithText(message).assertIsDisplayed()
     }
 }

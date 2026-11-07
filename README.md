@@ -1,20 +1,21 @@
 # Panther
 
-Panther is an offline-first Android application for creating and managing personal bodybuilding workout plans. It is not a workout tracking application. Persian is the primary language.
+Panther is an offline-first Android application for creating and managing personal bodybuilding workout plans. It is not a workout tracking application. Persian is the primary interface language, rendered RTL with the Vazirmatn typeface and Jalali (Solar Hijri) calendar.
 
 ## Technology
 
 Kotlin, Jetpack Compose and Material 3, Clean Architecture with MVVM, Navigation Compose, Hilt, Room, Kotlin coroutines and Flow, and Preferences DataStore. The project uses a single app module, Gradle Kotlin DSL, and a version catalog. Minimum Android version is API 26; compile and target SDK are API 36.
 
-## Planned MVP
+## Core capabilities
 
-- Edit a local profile (name, photo, age, height and weight).
-- Create, edit, delete, activate, deactivate and archive multiple programs, with at most one active at a time.
-- Organize and reorder training days and exercises, with independent repetition or duration targets for every set.
-- View a dashboard and access Home, Programs, History and Profile; access settings from an appropriate screen.
+- Edit a local profile (name, age, height and weight) with automatic BMI calculation and classification on the dashboard.
+- View a read-only Home dashboard displaying BMI, active workout program (highlighted in green), tabbed training days, and per-set visual square targets.
+- Create, edit, delete, and toggle active status across multiple workout programs via a compact Programs list, with at most one active program at any time.
+- Manage training days in separate tabs, add/edit/delete exercises, select duration targets from a searchable dropdown list, and reorder exercise cards via Drag & Drop with persistent Room storage.
+- Render all displayed dates uniformly in the Persian Jalali calendar (`YYYY/MM/DD`) while storing epoch timestamps in SQLite.
 - Export/import validated JSON backups and export programs as PDF using user-selected locations.
 
-No workout sessions, recorded performance, timers, accounts or cloud synchronization are in scope. See [product specification](docs/PRODUCT_SPECIFICATION.md).
+No workout sessions, recorded performance, history, archive, profile photos, timers, accounts or cloud synchronization are in scope. See [product specification](docs/PRODUCT_SPECIFICATION.md).
 
 ## Architecture and structure
 
@@ -22,10 +23,10 @@ One Android application module with Compose presentation, domain models/use case
 
 ```text
 app/src/main/java/com/panther/app/
-├── core/          # design system, navigation and theme preferences
-├── data/          # Room entities, DAO, database and repository
+├── core/          # design system (Vazirmatn, colors, components), Jalali date format, navigation, theme preferences
+├── data/          # Room entities, DAO, database, backup codec, PDF exporter and repository
 ├── di/            # Hilt bindings
-├── domain/        # models, validation, repository contract, use cases
+├── domain/        # models, BMI & duration catalog, validation, repository contract, use cases
 ├── feature/       # Compose screens and ViewModels
 ├── MainActivity.kt
 └── PantherApplication.kt
@@ -55,13 +56,7 @@ On Windows use `gradlew.bat`. Alternatively open the root directory in Android S
 
 ## Current status
 
-The MVP includes the four-destination shell and dashboard; local profile editing with Photo Picker; program creation, editing, activation, archive and confirmed deletion; training-day and exercise editing/reordering; independent repetition or duration targets per set; persisted theme selection; validated JSON backup/restore; and per-program PDF export. Program history is a list of programs, not workout tracking. Backup files are chosen through Android's Storage Access Framework; importing validates the complete file and asks before replacing local data. Profile images are included in backup files with a 5 MB image limit. Android automatic backup remains disabled.
-
-**Verification status:** the CI pipeline is green on
-`arena/acfba818-panther`: `:app:testDebugUnitTest`, `:app:lintDebug` and
-`:app:assembleDebug` pass (16 unit tests, 0 failures), the debug APK is produced, and the
-instrumentation tests run on an API 29 emulator. `app/schemas` holds the Room schema
-baseline (version 1), and CI fails if a schema change is not committed.
+The application features a three-destination navigation shell (`Home`, `Programs`, `Profile`, with `Settings` reachable from `Profile`); a read-only Home dashboard with BMI calculation, green active-program highlighting, tabbed day views, and square per-set indicators; compact program cards with toggle switches and a bottom-left floating creation button; dedicated program pages with tabbed training days, drag-and-drop exercise reordering, and searchable duration dropdowns; uniform Jalali date rendering; bundled Vazirmatn fonts; custom fitness launcher/header icons; persisted theme selection; validated JSON backup/restore; and per-program PDF export. Android automatic backup remains disabled.
 
 ## GitHub Actions
 

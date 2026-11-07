@@ -12,7 +12,6 @@ interface PantherRepository {
     suspend fun deleteProgram(id: Long)
     suspend fun activateProgram(id: Long)
     suspend fun deactivateProgram(id: Long)
-    suspend fun archiveProgram(id: Long, archived: Boolean)
     fun observeDays(programId: Long): Flow<List<TrainingDay>>
     fun observeExercises(dayId: Long): Flow<List<Exercise>>
     fun observeSets(exerciseId: Long): Flow<List<ExerciseSet>>
