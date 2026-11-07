@@ -1,117 +1,515 @@
 package com.panther.app.feature
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.AbsoluteAlignment
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.panther.app.R
 import com.panther.app.core.designsystem.components.*
+import com.panther.app.core.designsystem.theme.LocalPantherColors
 import com.panther.app.core.designsystem.theme.PantherSpacing
 import com.panther.app.core.format.PantherDateFormat
-import com.panther.app.domain.model.WorkoutProgram
-import com.panther.app.domain.model.WorkoutValidation
+import com.panther.app.domain.model.*
 
 @Composable
-private fun ProgramCard(program: WorkoutProgram, onClick: () -> Unit, actions: @Composable ColumnScope.() -> Unit = {}) {
-    PantherCard(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
-        Text(program.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-        Spacer(Modifier.height(PantherSpacing.small))
-        Text(stringResource(if (program.isArchived) R.string.status_archived else if (program.isActive) R.string.status_active else R.string.status_inactive), color = MaterialTheme.colorScheme.primary)
-        Text(stringResource(R.string.counts, program.dayCount, program.exerciseCount), style = MaterialTheme.typography.bodyMedium)
-        Text(stringResource(R.string.created_at, PantherDateFormat.medium(program.createdAt)), style = MaterialTheme.typography.bodySmall)
-        actions()
-    }
+private fun ErrorNotice(error: Boolean) {
+    if (error) Text(stringResource(R.string.error_generic), color = MaterialTheme.colorScheme.error)
 }
 
 @Composable
-private fun ErrorNotice(error: Boolean) { if (error) Text(stringResource(R.string.error_generic), color = MaterialTheme.colorScheme.error) }
-
-@Composable
-fun HomeScreen(programs: ProgramsViewModel, profile: ProfileViewModel, onCreate: () -> Unit, onDetails: (Long) -> Unit) {
+fun HomeScreen(programs: ProgramsViewModel, profile: ProfileViewModel) {
     val programState by programs.programs.collectAsStateWithLifecycle()
     val profileState by profile.profile.collectAsStateWithLifecycle()
-    LazyColumn(contentPadding = PaddingValues(PantherSpacing.medium), verticalArrangement = Arrangement.spacedBy(PantherSpacing.medium)) {
+    val user = profileState.value
+    val activeProgram = programState.value.firstOrNull { it.isActive }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(PantherSpacing.medium),
+        verticalArrangement = Arrangement.spacedBy(PantherSpacing.medium),
+    ) {
         item {
-            Text(stringResource(R.string.greeting, profileState.value?.name ?: stringResource(R.string.guest)), style = MaterialTheme.typography.headlineMedium)
-            Text(stringResource(R.string.foundation_message), style = MaterialTheme.typography.bodyMedium)
+            PantherBrandHeader(subtitle = stringResource(R.string.foundation_message))
         }
-        item { ProfileAvatar(profileState.value?.profileImageUri) }
-        item { PantherButton(stringResource(R.string.new_program), onCreate, Modifier.fillMaxWidth()) }
-        item { PantherSectionHeader(stringResource(R.string.active_program)) }
-        if (programState.loading || profileState.loading) item { Text(stringResource(R.string.loading)) }
-        if (programState.error || profileState.error) item { ErrorNotice(true) }
-        val active = programState.value.firstOrNull { it.isActive }
+        item {
+            Text(
+                text = stringResource(R.string.greeting, user?.name ?: stringResource(R.string.guest)),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+        item {
+            BmiDashboardCard(heightCm = user?.heightCm, weightKg = user?.weightKg)
+        }
+        item {
+            PantherSectionHeader(stringResource(R.string.active_program))
+        }
+        if (programState.loading || profileState.loading) {
+            item { Text(stringResource(R.string.loading)) }
+        }
+        if (programState.error || profileState.error) {
+            item { ErrorNotice(true) }
+        }
         if (!programState.loading && !programState.error) {
-            if (active == null) item { Text(stringResource(R.string.no_active)) }
-            else item { ProgramCard(active, { onDetails(active.id) }) }
+            if (activeProgram == null) {
+                item {
+                    PantherCard {
+                        Text(
+                            text = stringResource(R.string.no_active),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            } else {
+                item(key = activeProgram.id) {
+                    ReadOnlyActiveProgramSection(
+                        program = activeProgram,
+                        viewModel = programs,
+                    )
+                }
+            }
         }
-        item { PantherSectionHeader(stringResource(R.string.recent_programs)) }
-        if (!programState.loading && !programState.error && programState.value.isEmpty()) item { Text(stringResource(R.string.no_programs)) }
-        items(programState.value.take(5), key = { it.id }) { program -> ProgramCard(program, { onDetails(program.id) }) }
     }
 }
 
 @Composable
-fun ProgramsScreen(viewModel: ProgramsViewModel, initiallyCreate: Boolean, onDetails: (Long) -> Unit) {
+private fun BmiDashboardCard(heightCm: Double?, weightKg: Double?) {
+    val bmi = remember(heightCm, weightKg) { BmiCalculator.calculate(heightCm, weightKg) }
+    val activeColors = LocalPantherColors.current
+
+    PantherCard(
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.bmi_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            if (bmi != null) {
+                val categoryLabel = stringResource(
+                    when (bmi.category) {
+                        BmiCategory.UNDERWEIGHT -> R.string.bmi_underweight
+                        BmiCategory.NORMAL -> R.string.bmi_normal
+                        BmiCategory.OVERWEIGHT -> R.string.bmi_overweight
+                        BmiCategory.OBESE -> R.string.bmi_obese
+                    },
+                )
+                val badgeColor = when (bmi.category) {
+                    BmiCategory.NORMAL -> activeColors.activeGreen
+                    BmiCategory.UNDERWEIGHT -> MaterialTheme.colorScheme.primary
+                    BmiCategory.OVERWEIGHT -> MaterialTheme.colorScheme.tertiary
+                    BmiCategory.OBESE -> MaterialTheme.colorScheme.error
+                }
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = badgeColor.copy(alpha = 0.15f),
+                    border = BorderStroke(1.dp, badgeColor.copy(alpha = 0.55f)),
+                ) {
+                    Text(
+                        text = categoryLabel,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = badgeColor,
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(PantherSpacing.small))
+        if (bmi == null) {
+            Text(
+                text = stringResource(R.string.bmi_missing),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            Text(
+                text = PantherDateFormat.persianDigits(String.format(java.util.Locale.US, "%.1f", bmi.value)),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Spacer(Modifier.height(PantherSpacing.extraSmall))
+            val formattedHeight = PantherDateFormat.persianDigits(formatDecimalTrimmed(heightCm ?: 0.0))
+            val formattedWeight = PantherDateFormat.persianDigits(formatDecimalTrimmed(weightKg ?: 0.0))
+            Text(
+                text = stringResource(R.string.bmi_metrics, formattedHeight, formattedWeight),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+private fun formatDecimalTrimmed(value: Double): String =
+    if (value % 1.0 == 0.0) value.toLong().toString()
+    else String.format(java.util.Locale.US, "%.1f", value)
+
+@Composable
+private fun ReadOnlyActiveProgramSection(
+    program: WorkoutProgram,
+    viewModel: ProgramsViewModel,
+) {
+    val activeColors = LocalPantherColors.current
+    val daysState by viewModel.days(program.id).collectAsStateWithLifecycle(initialValue = DataState(emptyList(), loading = true))
+    val daysList = daysState.value
+    var selectedDayId by rememberSaveable(program.id) { mutableStateOf<Long?>(null) }
+    val selectedIndex = remember(daysList, selectedDayId) {
+        val idx = daysList.indexOfFirst { it.id == selectedDayId }
+        if (idx >= 0) idx else 0
+    }
+    LaunchedEffect(daysList, selectedIndex) {
+        if (daysList.isNotEmpty()) {
+            selectedDayId = daysList[selectedIndex].id
+        }
+    }
+
+    PantherCard(
+        containerColor = activeColors.activeGreenContainer,
+        border = BorderStroke(1.5.dp, activeColors.activeGreen),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = program.name,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f),
+            )
+            Spacer(Modifier.width(PantherSpacing.small))
+            PantherActiveBadge()
+        }
+        Spacer(Modifier.height(PantherSpacing.extraSmall))
+        Text(
+            text = stringResource(
+                R.string.counts,
+                PantherDateFormat.persianNumber(program.dayCount),
+                PantherDateFormat.persianNumber(program.exerciseCount),
+            ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = stringResource(R.string.created_at, PantherDateFormat.medium(program.createdAt)),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Spacer(Modifier.height(PantherSpacing.compact))
+        if (daysState.loading) {
+            Text(stringResource(R.string.loading), style = MaterialTheme.typography.bodySmall)
+        } else if (daysList.isEmpty()) {
+            Text(
+                text = stringResource(R.string.no_days),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            ScrollableTabRow(
+                selectedTabIndex = selectedIndex,
+                edgePadding = 0.dp,
+                containerColor = Color.Transparent,
+                contentColor = activeColors.activeGreen,
+                indicator = { tabPositions ->
+                    if (selectedIndex in tabPositions.indices) {
+                        TabRowDefaults.SecondaryIndicator(
+                            modifier = Modifier.tabIndicatorOffset(tabPositions[selectedIndex]),
+                            color = activeColors.activeGreen,
+                        )
+                    }
+                },
+                divider = {
+                    HorizontalDivider(color = activeColors.activeGreen.copy(alpha = 0.25f))
+                },
+            ) {
+                daysList.forEachIndexed { index, day ->
+                    Tab(
+                        selected = selectedIndex == index,
+                        onClick = { selectedDayId = day.id },
+                        selectedContentColor = activeColors.activeGreen,
+                        unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = {
+                            Text(
+                                text = day.name,
+                                fontWeight = if (selectedIndex == index) FontWeight.Bold else FontWeight.Medium,
+                            )
+                        },
+                    )
+                }
+            }
+            Spacer(Modifier.height(PantherSpacing.compact))
+            val currentDay = daysList[selectedIndex]
+            key(currentDay.id) {
+                ReadOnlyTrainingDayExercises(day = currentDay, viewModel = viewModel)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReadOnlyTrainingDayExercises(day: TrainingDay, viewModel: ProgramsViewModel) {
+    val exercisesState by viewModel.exercises(day.id).collectAsStateWithLifecycle(initialValue = DataState(emptyList(), loading = true))
+    if (exercisesState.loading) {
+        Text(stringResource(R.string.loading), style = MaterialTheme.typography.bodySmall)
+    } else if (exercisesState.value.isEmpty()) {
+        Text(
+            text = stringResource(R.string.no_exercises_in_day),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    } else {
+        Column(verticalArrangement = Arrangement.spacedBy(PantherSpacing.small)) {
+            exercisesState.value.forEach { exercise ->
+                key(exercise.id) {
+                    ReadOnlyExerciseItem(exercise = exercise, viewModel = viewModel)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReadOnlyExerciseItem(exercise: Exercise, viewModel: ProgramsViewModel) {
+    val sets by viewModel.sets(exercise.id).collectAsStateWithLifecycle(initialValue = emptyList())
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+        border = BorderStroke(1.dp, LocalPantherColors.current.activeGreen.copy(alpha = 0.25f)),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(PantherSpacing.compact),
+            verticalArrangement = Arrangement.spacedBy(PantherSpacing.small),
+        ) {
+            Text(
+                text = exercise.name,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            if (sets.isNotEmpty()) {
+                ExerciseSetsSquares(sets = sets, highlightGreen = true)
+            }
+        }
+    }
+}
+
+@Composable
+fun ProgramsScreen(
+    viewModel: ProgramsViewModel,
+    onDetails: (Long) -> Unit,
+) {
     val state by viewModel.programs.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
-    var editingId by rememberSaveable { mutableStateOf<Long?>(null) }
-    var editName by rememberSaveable { mutableStateOf("") }
-    var showEditor by rememberSaveable { mutableStateOf(initiallyCreate) }
-    var deleteId by rememberSaveable { mutableStateOf<Long?>(null) }
-    if (showEditor) {
+    var showCreateDialog by rememberSaveable { mutableStateOf(false) }
+    var newProgramName by rememberSaveable { mutableStateOf("") }
+
+    if (showCreateDialog) {
         var invalid by remember { mutableStateOf(false) }
-        AlertDialog(onDismissRequest = { showEditor = false }, title = { Text(stringResource(if (editingId == null) R.string.new_program else R.string.edit)) }, text = {
-            Column {
-                PantherTextField(editName, { editName = it; invalid = false }, stringResource(R.string.program_name), isError = invalid)
-                if (invalid) Text(stringResource(R.string.error_name), color = MaterialTheme.colorScheme.error)
-            }
-        }, confirmButton = { TextButton(onClick = {
-            if (!WorkoutValidation.name(editName)) invalid = true else {
-                val id = editingId
-                if (id == null) viewModel.create(editName) else viewModel.rename(id, editName)
-                showEditor = false
-            }
-        }) { Text(stringResource(R.string.save)) } }, dismissButton = { TextButton(onClick = { showEditor = false }) { Text(stringResource(R.string.cancel)) } })
+        AlertDialog(
+            onDismissRequest = { showCreateDialog = false },
+            title = { Text(stringResource(R.string.new_program)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(PantherSpacing.extraSmall)) {
+                    PantherTextField(
+                        value = newProgramName,
+                        onValueChange = { newProgramName = it; invalid = false },
+                        label = stringResource(R.string.program_name),
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = invalid,
+                    )
+                    if (invalid) {
+                        Text(
+                            text = stringResource(R.string.error_name),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (!WorkoutValidation.name(newProgramName)) {
+                            invalid = true
+                        } else {
+                            viewModel.create(newProgramName)
+                            showCreateDialog = false
+                        }
+                    },
+                ) {
+                    Text(stringResource(R.string.save))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCreateDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
     }
-    if (deleteId != null) AlertDialog(onDismissRequest = { deleteId = null }, title = { Text(stringResource(R.string.delete)) }, text = { Text(stringResource(R.string.confirm_delete)) }, confirmButton = { TextButton(onClick = { deleteId?.let(viewModel::delete); deleteId = null }) { Text(stringResource(R.string.delete)) } }, dismissButton = { TextButton(onClick = { deleteId = null }) { Text(stringResource(R.string.cancel)) } })
-    LazyColumn(contentPadding = PaddingValues(PantherSpacing.medium), verticalArrangement = Arrangement.spacedBy(PantherSpacing.medium)) {
-        item { PantherSectionHeader(stringResource(R.string.programs)) }
-        item { PantherButton(stringResource(R.string.new_program), { editingId = null; editName = ""; showEditor = true }, Modifier.fillMaxWidth()) }
-        if (state.loading) item { Text(stringResource(R.string.loading)) }
-        if (state.error || error) item { ErrorNotice(true) }
-        if (!state.loading && !state.error && state.value.isEmpty()) item { Text(stringResource(R.string.no_programs)) }
-        items(state.value, key = { it.id }) { p ->
-            ProgramCard(p, { onDetails(p.id) }) {
-                // Wrapping rows prevents actions from overflowing on narrow screens.
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    TextButton(onClick = { editingId = p.id; editName = p.name; showEditor = true }) { Text(stringResource(R.string.edit)) }
-                    TextButton(onClick = { deleteId = p.id }) { Text(stringResource(R.string.delete)) }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                start = PantherSpacing.medium,
+                end = PantherSpacing.medium,
+                top = PantherSpacing.medium,
+                bottom = 92.dp,
+            ),
+            verticalArrangement = Arrangement.spacedBy(PantherSpacing.small),
+        ) {
+            item {
+                PantherBrandHeader(subtitle = stringResource(R.string.programs))
+                Spacer(Modifier.height(PantherSpacing.small))
+            }
+            if (state.loading) {
+                item { Text(stringResource(R.string.loading)) }
+            }
+            if (state.error || error) {
+                item { ErrorNotice(true) }
+            }
+            if (!state.loading && !state.error && state.value.isEmpty()) {
+                item {
+                    PantherCard {
+                        Text(
+                            text = stringResource(R.string.no_programs),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    if (!p.isArchived) TextButton(onClick = { if (p.isActive) viewModel.deactivate(p.id) else viewModel.activate(p.id) }) { Text(stringResource(if (p.isActive) R.string.deactivate else R.string.activate)) }
-                    TextButton(onClick = { viewModel.archive(p.id, !p.isArchived) }) { Text(stringResource(if (p.isArchived) R.string.unarchive else R.string.archive)) }
-                }
+            }
+            items(state.value, key = { it.id }) { program ->
+                CompactProgramCard(
+                    program = program,
+                    onClick = { onDetails(program.id) },
+                    onToggleActive = { active -> viewModel.setActive(program.id, active) },
+                )
             }
         }
+
+        ExtendedFloatingActionButton(
+            onClick = {
+                newProgramName = ""
+                showCreateDialog = true
+            },
+            modifier = Modifier
+                .align(AbsoluteAlignment.BottomLeft)
+                .padding(PantherSpacing.medium),
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            icon = { Icon(Icons.Default.Add, contentDescription = null) },
+            text = { Text(stringResource(R.string.new_program), fontWeight = FontWeight.SemiBold) },
+        )
     }
 }
 
 @Composable
-fun HistoryScreen(viewModel: ProgramsViewModel, onDetails: (Long) -> Unit) {
-    val state by viewModel.programs.collectAsStateWithLifecycle()
-    LazyColumn(contentPadding = PaddingValues(PantherSpacing.medium), verticalArrangement = Arrangement.spacedBy(PantherSpacing.medium)) {
-        item { PantherSectionHeader(stringResource(R.string.history)) }
-        if (state.loading) item { Text(stringResource(R.string.loading)) }
-        if (state.error) item { ErrorNotice(true) }
-        if (!state.loading && !state.error && state.value.isEmpty()) item { Text(stringResource(R.string.no_history)) }
-        items(state.value, key = { it.id }) { p -> ProgramCard(p, { onDetails(p.id) }) }
+private fun CompactProgramCard(
+    program: WorkoutProgram,
+    onClick: () -> Unit,
+    onToggleActive: (Boolean) -> Unit,
+) {
+    val activeColors = LocalPantherColors.current
+    val containerColor = if (program.isActive) {
+        activeColors.activeGreenContainer
+    } else {
+        MaterialTheme.colorScheme.surface
+    }
+    val border = if (program.isActive) {
+        BorderStroke(1.5.dp, activeColors.activeGreen)
+    } else {
+        BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        border = border,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = PantherSpacing.medium, vertical = PantherSpacing.compact),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(PantherSpacing.small),
+                ) {
+                    Text(
+                        text = program.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    if (program.isActive) {
+                        PantherActiveBadge()
+                    }
+                }
+                Text(
+                    text = stringResource(
+                        R.string.counts,
+                        PantherDateFormat.persianNumber(program.dayCount),
+                        PantherDateFormat.persianNumber(program.exerciseCount),
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = stringResource(R.string.created_at, PantherDateFormat.medium(program.createdAt)),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Spacer(Modifier.width(PantherSpacing.compact))
+            Switch(
+                checked = program.isActive,
+                onCheckedChange = onToggleActive,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = activeColors.onActiveGreen,
+                    checkedTrackColor = activeColors.activeGreen,
+                    checkedBorderColor = activeColors.activeGreen,
+                ),
+            )
+        }
     }
 }

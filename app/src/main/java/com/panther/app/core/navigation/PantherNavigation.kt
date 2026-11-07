@@ -2,9 +2,8 @@ package com.panther.app.core.navigation
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -19,25 +18,34 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavType
-import androidx.navigation.navArgument
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.panther.app.R
-import com.panther.app.feature.*
+import com.panther.app.feature.HomeScreen
+import com.panther.app.feature.ProfileScreen
+import com.panther.app.feature.ProfileViewModel
+import com.panther.app.feature.ProgramEditorScreen
+import com.panther.app.feature.ProgramsScreen
+import com.panther.app.feature.ProgramsViewModel
+import com.panther.app.feature.SettingsScreen
+import com.panther.app.feature.SettingsViewModel
 
 private data class MainDestination(val route: String, val label: Int, val icon: ImageVector)
+
 private val destinations = listOf(
     MainDestination("home", R.string.home, Icons.Default.Home),
-    MainDestination("programs", R.string.programs, Icons.Default.List),
-    MainDestination("history", R.string.history, Icons.Default.Favorite),
+    MainDestination("programs", R.string.programs, Icons.AutoMirrored.Filled.List),
     MainDestination("profile", R.string.profile, Icons.Default.Person),
 )
 
 @Composable
-fun PantherNavigation(programs: ProgramsViewModel, profile: ProfileViewModel, settings: SettingsViewModel) {
+fun PantherNavigation(
+    programs: ProgramsViewModel,
+    profile: ProfileViewModel,
+    settings: SettingsViewModel,
+) {
     val navController = rememberNavController()
     val entry by navController.currentBackStackEntryAsState()
     val route = entry?.destination?.route
@@ -46,8 +54,11 @@ fun PantherNavigation(programs: ProgramsViewModel, profile: ProfileViewModel, se
         bottomBar = {
             NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                 destinations.forEach { destination ->
+                    val isSelected = route == destination.route ||
+                        (destination.route == "programs" && route == "editor/{id}") ||
+                        (destination.route == "profile" && route == "settings")
                     NavigationBarItem(
-                        selected = route == destination.route || (destination.route == "programs" && (route?.startsWith("programs") == true || route == "editor/{id}")),
+                        selected = isSelected,
                         onClick = {
                             navController.navigate(destination.route) {
                                 popUpTo(navController.graph.findStartDestination().id) { saveState = true }
@@ -57,23 +68,52 @@ fun PantherNavigation(programs: ProgramsViewModel, profile: ProfileViewModel, se
                         },
                         icon = { Icon(destination.icon, contentDescription = null) },
                         label = { Text(stringResource(destination.label)) },
-                        colors = NavigationBarItemDefaults.colors(selectedIconColor = MaterialTheme.colorScheme.primary, selectedTextColor = MaterialTheme.colorScheme.primary, indicatorColor = MaterialTheme.colorScheme.surface),
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            indicatorColor = MaterialTheme.colorScheme.surfaceVariant,
+                        ),
                     )
                 }
             }
         },
     ) { padding ->
-        NavHost(navController = navController, startDestination = "home", modifier = Modifier.padding(padding)) {
-            composable("home") { HomeScreen(programs, profile, onCreate = { navController.navigate("programs?create=true") }, onDetails = { navController.navigate("editor/$it") }) }
-            composable("programs?create={create}", arguments = listOf(navArgument("create") { type = NavType.BoolType; defaultValue = false })) { backStack ->
-                ProgramsScreen(programs, initiallyCreate = backStack.arguments?.getBoolean("create") == true, onDetails = { navController.navigate("editor/$it") })
+        NavHost(
+            navController = navController,
+            startDestination = "home",
+            modifier = Modifier.padding(padding),
+        ) {
+            composable("home") {
+                HomeScreen(programs = programs, profile = profile)
             }
-            composable("history") { HistoryScreen(programs) { navController.navigate("editor/$it") } }
-            composable("profile") { ProfileScreen(profile) { navController.navigate("settings") } }
-            composable("settings") { SettingsScreen(settings) { navController.popBackStack() } }
+            composable("programs") {
+                ProgramsScreen(
+                    viewModel = programs,
+                    onDetails = { navController.navigate("editor/$it") },
+                )
+            }
+            composable("profile") {
+                ProfileScreen(
+                    viewModel = profile,
+                    onSettings = { navController.navigate("settings") },
+                )
+            }
+            composable("settings") {
+                SettingsScreen(
+                    viewModel = settings,
+                    onBack = { navController.popBackStack() },
+                )
+            }
             composable("editor/{id}") { backStack ->
                 val id = backStack.arguments?.getString("id")?.toLongOrNull()
-                if (id != null) ProgramEditorScreen(programs, settings, id) { navController.popBackStack() }
+                if (id != null) {
+                    ProgramEditorScreen(
+                        viewModel = programs,
+                        settings = settings,
+                        programId = id,
+                        onBack = { navController.popBackStack() },
+                    )
+                }
             }
         }
     }
