@@ -65,17 +65,16 @@ baseline (version 1), and CI fails if a schema change is not committed.
 
 ## GitHub Actions
 
-Android CI runs on pull requests, pushes to any branch, and manual dispatch. It builds a debug APK, runs unit tests and lint, and runs instrumented tests on an API 29 emulator. Download `panther-debug-apk` from the build run's artifacts; it is a debug-signed build, not a release APK. Test reports are uploaded when available.
+Android CI runs on pull requests targeting `main`, on pushes to `main`, and on manual dispatch. It builds a debug APK, runs unit tests and lint, and runs instrumented tests on an API 29 emulator (documentation-only changes skip the emulator). Download `panther-debug-apk` from the CI run's artifacts; it is a debug-signed build, not a release APK. Test reports and the Room schema are uploaded when available.
 
-Five workflows are defined: `ci.yml` (lint, unit tests, debug APK, instrumentation),
-`security.yml` (dependency review and dependency-graph submission), `build.yml` (release candidate from `main`),
-`release.yml` (signed release on `v*.*.*` tags) and `cleanup.yml` (artifact retention).
-See [docs/GITHUB_ACTIONS.md](docs/GITHUB_ACTIONS.md) for the authoritative description.
+Two workflows are defined:
 
-Artifact cleanup runs daily at 00:00 UTC and can also be triggered manually. It deletes
-artifacts older than 30 days (matching the longest workflow retention) and never deletes
-`panther-official-release-*` artifacts. Scheduled workflows only run from the default
-branch.
+- `ci.yml` — lint, unit tests, debug APK, Room schema baseline check and instrumentation tests.
+- `release.yml` — builds, signs and verifies the official APK for `v*.*.*` tags, then creates a draft GitHub Release that the owner publishes manually.
+
+See [docs/GITHUB_ACTIONS.md](docs/GITHUB_ACTIONS.md) for the authoritative description, including the workflows that were removed on 2026-11-07 and the consequences of their removal.
+
+Artifacts are retained for 7 days (CI) and 30 days (release) and GitHub expires them automatically; no scheduled cleanup job is needed.
 
 ## License
 

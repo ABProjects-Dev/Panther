@@ -23,16 +23,19 @@
    - JSON codec with version validation (Rule 13, 14).
    - GitHub Release integration (Rule 12).
 4. **GitHub Actions**
-   - CI, Security, Build, Release and Cleanup workflows.
+   - CI workflow (`ci.yml`) and Release workflow (`release.yml`).
 
 ## Non-Functional Requirements
 1. **Security**
    - Keystore outside repo (Rule 13).
    - Secrets in GitHub Actions (Rule 13).
-   - Vulnerability scanning (security.yml).
+   - Vulnerability alerts come from GitHub's dependency graph, which an owner must
+     enable under *Settings → Code security → Dependency graph*; it is currently
+     disabled, so no automated advisory gate is active.
 2. **Performance**
    - Efficient flows and coroutines.
-   - Artifact retention management (Rule 16).
+   - Bounded artifact retention (7 days for CI artifacts, 30 days for release
+     artifacts) (Rule 16).
 3. **Maintainability**
    - Clean architecture (Rule 14).
    - English technical docs, Persian reports (Rule 2, 3).

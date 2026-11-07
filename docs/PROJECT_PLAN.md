@@ -12,16 +12,16 @@
 - **Goal**: Implement new features in `feature/*` branches.
 - **Process**:
   1. Develop the feature on a `feature/*` branch.
-  2. Run CI and security checks; both must be green.
+  2. Run CI; it must be green (lint, unit tests, debug APK, Room schema, instrumentation).
   3. Open a pull request to `main` and merge after review.
-  4. `build.yml` produces a release candidate from `main`.
-  5. Tag and release (owner approval required).
+  4. Tag `vX.Y.Z` and let `release.yml` build and sign the official APK.
+  5. Publish the draft release (owner approval required).
 
 ## Long-term Goals
 - Maintain code quality and stability (Rule 14).
 - Ensure security and sensitive information protection (Rule 13).
 - Preserve project history and data (Rule 16, 20).
-- Regular cleanup of artifacts (Rule 16).
+- Keep artifact retention bounded (7 days for CI artifacts, 30 days for release artifacts).
 
 ## Branch Strategy
 

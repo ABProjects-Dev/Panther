@@ -1,5 +1,26 @@
 # Panther Project Changelog
 
+## [Unreleased]
+
+### Removed
+- **2026-11-07**: Deleted the `build.yml` (release candidate), `security.yml`
+  (dependency review and dependency-graph submission) and `cleanup.yml` (artifact
+  retention) workflows. The pipeline is now `ci.yml` for validation and
+  `release.yml` for official releases. Consequences: no per-merge unsigned release
+  candidate and no scheduled artifact cleanup (GitHub expires artifacts at their own
+  retention: 7 days for CI artifacts, 30 days for release artifacts). The removed
+  dependency review was already advisory because the repository setting
+  *Dependency graph* is disabled.
+
+### Changed
+- **2026-11-07**: Documentation updated to describe the two remaining workflows and to
+  state the consequences of the removal: `docs/GITHUB_ACTIONS.md` (rewritten),
+  `README.md`, `RELEASES.md`, `docs/ARCHITECTURE.md`, `docs/PROJECT_PLAN.md`,
+  `docs/REQUIREMENTS.md`, `docs/RELEASE_GUIDE.md` and `docs/SECRETS_SETUP.md`.
+- **2026-11-07**: Corrected the documented CI triggers: `ci.yml` runs on pull requests
+  targeting `main`, on pushes to `main` and on manual dispatch, not on pushes to any
+  branch.
+
 ## [v1.0.0] - 2026-11-07
 
 First stable release. The application builds, is signed, and ships with a green
