@@ -433,6 +433,30 @@ When project-specific instructions conflict with general recommendations:
 
 Do not assume that instructions from another project apply to this repository.
 
+### 19.1 Owner operating rules for agents
+
+These rules are set by the project owner and take precedence over the general
+recommendations in sections 6, 7 and 11.
+
+- **No pull request without an explicit request.** Do not open a pull request
+  unless the project owner directly asks for one.
+- **No merge without an explicit request.** Do not merge a pull request unless
+  the project owner directly asks for that merge. A green pipeline is never
+  treated as approval to merge.
+- **One branch: `dev`.** All changes are committed to a single branch named
+  `dev`; do not create additional branches. This replaces the `feature/*`,
+  `fix/*`, `refactor/*` and `docs/*` prefixes of section 6 for this repository.
+  Inside an Arena Agent session the session branch is fixed by the platform and
+  cannot be renamed or replaced, so apply the rule wherever branch creation is
+  possible and keep the session history clean.
+- **CI runs only after a pull request.** `ci.yml` is triggered by the
+  `pull_request` event only. When the result is positive, stop, report the
+  result and wait for the owner's approval before merging.
+- **Releases start with the word `tag`.** When the owner sends the word `tag`,
+  list the available tag options (patch, minor and major with the resulting
+  version numbers, derived from the latest release tag) and wait for the
+  choice. Perform the release only after the owner selects one.
+
 20. Final Operating Principle
 
 Work carefully, preserve project history, protect sensitive information, and keep the repository maintainable.

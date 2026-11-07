@@ -18,7 +18,20 @@
   dependency review was already advisory because the repository setting
   *Dependency graph* is disabled.
 
+### Added
+- **2026-11-07**: Owner operating rules recorded in `AGENTS.md` section 19.1: no pull
+  request and no merge without an explicit request, a single `dev` branch, CI only after
+  a pull request, and a release that starts only when the owner sends the word `tag`.
+  The same rules are summarised in `docs/GITHUB_ACTIONS.md`.
+
 ### Changed
+- **2026-11-07**: `ci.yml` runs on the `pull_request` event only. The `push` to `main`
+  trigger and `workflow_dispatch` were removed, so there is no post-merge health check
+  and no manual run (owner rule, `AGENTS.md` section 19.1).
+- **2026-11-07**: Closed the four unsuccessful Dependabot pull requests (#16, #17, #19,
+  #26; every one of them failed CI) and deleted all extra branches, leaving only `main`
+  and the current working branch. The pre-squash history stays reachable on GitHub under
+  `refs/pull/28/head`.
 - **2026-11-07**: Documentation updated to describe the two remaining workflows and to
   state the consequences of the removal: `docs/GITHUB_ACTIONS.md` (rewritten),
   `README.md`, `RELEASES.md`, `docs/ARCHITECTURE.md`, `docs/PROJECT_PLAN.md`,

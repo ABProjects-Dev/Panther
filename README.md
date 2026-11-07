@@ -65,7 +65,7 @@ baseline (version 1), and CI fails if a schema change is not committed.
 
 ## GitHub Actions
 
-Android CI runs on pull requests targeting `main`, on pushes to `main`, and on manual dispatch. It builds a debug APK, runs unit tests and lint, and runs instrumented tests on an API 29 emulator (documentation-only changes skip the emulator). Download `panther-debug-apk` from the CI run's artifacts; it is a debug-signed build, not a release APK. Test reports and the Room schema are uploaded when available.
+Android CI runs on pull requests targeting `main` only; pushes to `main` and manual dispatch do not start a run (owner rule, `AGENTS.md` section 19.1). It builds a debug APK, runs unit tests and lint, and runs instrumented tests on an API 29 emulator (documentation-only changes skip the emulator). Download `panther-debug-apk` from the CI run's artifacts; it is a debug-signed build, not a release APK. Test reports and the Room schema are uploaded when available.
 
 Two workflows are defined:
 

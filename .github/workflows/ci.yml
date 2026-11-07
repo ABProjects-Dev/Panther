@@ -1,14 +1,12 @@
 name: CI - Build, Test, Lint
 
 on:
-  # A pull request already validates its own branch, so pushing to a short-lived
-  # branch would run the whole pipeline twice for identical code. Pushes are
-  # therefore limited to main, where they act as a post-merge health check.
-  push:
-    branches: [ main ]
+  # Owner rule (AGENTS.md section 19.1): CI runs only after a pull request is
+  # opened. Pushes to main and manual dispatch do not start a run, because the
+  # pull request already validated the same commit and a second run would be
+  # duplicate work.
   pull_request:
     branches: [ main ]
-  workflow_dispatch:
 
 permissions:
   contents: read

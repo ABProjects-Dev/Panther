@@ -15,9 +15,10 @@ one pipeline ships it, without duplicate Gradle runs or extra scheduled jobs.
 
 ### 1. `ci.yml` — Continuous Integration
 
-- **Trigger:** push to `main`; pull requests targeting `main`; manual dispatch.
-  Pushes to short-lived branches do **not** start a run, because the pull
-  request already validates that branch and a second run would be identical.
+- **Trigger:** pull requests targeting `main` only. Pushes to `main` and manual
+  dispatch do **not** start a run (owner rule, `AGENTS.md` section 19.1): the
+  pull request already validated the same commit, so a post-merge run would be
+  duplicate work. Consequently there is no post-merge health check on `main`.
 - **Jobs:** `lint-and-unit-tests` → `instrumentation-tests`. Lint, unit tests,
   the debug APK and the Room schema check share one Gradle invocation:
   `./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug`.
@@ -94,7 +95,7 @@ Known blockers for manual upgrades, all verified in CI:
 
 ## Branch Strategy
 
-`AGENTS.md` section 6 is authoritative:
+`AGENTS.md` section 6 is authoritative for the general model:
 
 - `main`: stable, approved code.
 - `feature/*`: new functionality.
@@ -102,7 +103,23 @@ Known blockers for manual upgrades, all verified in CI:
 - `refactor/*`: internal improvements.
 - `docs/*`: documentation-only changes.
 
-There is no `develop` branch.
+For this repository the owner replaces those prefixes with a single branch named
+`dev` (`AGENTS.md` section 19.1): all changes go to `dev`, and no other
+development branches are created. There is no `develop` branch.
+
+## Operating rules set by the owner
+
+Recorded in `AGENTS.md` section 19.1 and repeated here because they change how
+this pipeline is used:
+
+- Do not open a pull request unless the owner directly asks for one.
+- Do not merge a pull request unless the owner directly asks for the merge; a
+  green pipeline is not an approval.
+- All changes go to the single `dev` branch.
+- CI runs only after a pull request; when it is green, stop and wait for the
+  owner's approval before merging.
+- A release starts only when the owner sends the word `tag`: list the patch,
+  minor and major options with the resulting versions, then wait for the choice.
 
 ## Release Procedure
 
