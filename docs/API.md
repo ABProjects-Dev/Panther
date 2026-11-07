@@ -4,8 +4,11 @@
 This document provides technical details for the Panther Android application APIs, including internal domain models, repository interfaces, and GitHub Actions integration.
 
 ## Domain Models (Rule 3)
-- **UserProfile**: Name, age, height, weight, profile image URI.
-- **ProgramBackup**: Name, creation time, active/archived status, days.
+- **UserProfile**: Name, age, height (cm), weight (kg).
+- **BmiCalculator / BmiResult**: Calculates BMI and classifies into `UNDERWEIGHT`, `NORMAL`, `OVERWEIGHT`, or `OBESE`.
+- **DurationCatalog / DurationOption**: Preset and custom `mm:ss` durations with Persian/ASCII searchable filtering.
+- **WorkoutProgram**: ID, name, creation timestamp, active status, day count, exercise count.
+- **ProgramBackup**: Name, creation time, active status, days, original ID.
 - **DayBackup**: Name, order, exercises.
 - **ExerciseBackup**: Name, order, sets.
 - **SetBackup**: Number, target type (`REPS`/`DURATION`), and either a repetition value or
@@ -19,7 +22,7 @@ This document provides technical details for the Panther Android application API
   `observeExercises(dayId)`, `observeSets(exerciseId)`.
 - **Profile:** `saveProfile(profile)`.
 - **Programs:** `createProgram(name)`, `renameProgram(id, name)`, `deleteProgram(id)`,
-  `activateProgram(id)`, `deactivateProgram(id)`, `archiveProgram(id, archived)`.
+  `activateProgram(id)`, `deactivateProgram(id)`.
 - **Days:** `addDay(programId, name, order)`, `renameDay(id, name)`, `deleteDay(id)`,
   `reorderDays(programId, ids)`.
 - **Exercises and sets:** `addExercise(dayId, name, order)`, `renameExercise(id, name)`,
@@ -28,9 +31,9 @@ This document provides technical details for the Panther Android application API
 - **Backup:** `createBackup()`, `restoreBackup(backup)`.
 
 ## ViewModels
-- **ProgramsViewModel**: Manage workout data flows and operations.
-- **ProfileViewModel**: Manage profile and image operations.
-- **SettingsViewModel**: Manage theme and backup/restore operations.
+- **ProgramsViewModel**: Manage workout data flows, activation toggles, tabs, and drag-and-drop reordering.
+- **ProfileViewModel**: Manage user profile data.
+- **SettingsViewModel**: Manage theme, PDF export, and JSON backup/restore operations.
 
 ## Backup JSON Format
 
@@ -39,7 +42,6 @@ This document provides technical details for the Panther Android application API
   "format": "panther-backup",
   "version": 1,
   "profile": { "name": "…", "age": 28, "heightCm": 175.5, "weightKg": 80.0 },
-  "profileImageBase64": null,
   "programs": [
     {
       "id": 7, "name": "Plan", "createdAt": 1700000000000,
@@ -58,7 +60,8 @@ This document provides technical details for the Panther Android application API
 
 `id` carries `ProgramBackup.originalId` and is written and read under the same key.
 Decoding validates size limits, single-active-program invariant, ordering uniqueness and
-set targets before any database write occurs.
+set targets before any database write occurs, while remaining backward-compatible with
+legacy v1 backups that include `profileImageBase64` or `archived`.
 
 ## GitHub Actions
 
@@ -67,5 +70,5 @@ See [GITHUB_ACTIONS.md](GITHUB_ACTIONS.md) for the authoritative workflow docume
 ## Secrets (Rule 13)
 - `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`, `KEYSTORE_BASE64`.
 
-Last Updated: 2026-11-05
+Last Updated: 2026-11-07
 Language: English (Rule 3)

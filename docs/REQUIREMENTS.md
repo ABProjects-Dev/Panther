@@ -1,8 +1,8 @@
 # Panther Project Requirements Specification
 
 ## Document History
-- **Version**: 1.0.0
-- **Date**: 2026-11-05
+- **Version**: 1.1.0-draft
+- **Date**: 2026-11-07
 - **Status**: Active
 
 ## System Requirements
@@ -13,15 +13,17 @@
 - **Compose**: Enabled
 
 ## Functional Requirements (Rule 4)
-1. **Workout Tracking**
-   - Programs, Days, Exercises, Sets.
-   - CRUD operations with validation (Rule 14).
-2. **Profile Management**
-   - User data and theme preferences.
-   - Image handling (Base64, max size limits).
-3. **Backup & Restore**
-   - JSON codec with version validation (Rule 13, 14).
-   - GitHub Release integration (Rule 12).
+1. **Workout Plan Management**
+   - Programs, tabbed Training Days, drag-and-drop reorderable Exercises, and per-set Targets (repetitions or searchable duration dropdown).
+   - Single-active-program invariant controlled via toggle switches and highlighted in green.
+   - Read-only Home dashboard with square visual set indicators.
+   - Uniform Persian Jalali calendar formatting over epoch-millisecond persistence.
+2. **Profile & Dashboard Metrics**
+   - Local profile data (name, age, height, weight) without profile photos, plus theme preferences.
+   - Automatic BMI calculation and classification on the dashboard.
+3. **Backup, Restore & PDF Export**
+   - JSON codec with version and structural validation (Rule 13, 14), backward-compatible with v1 backups.
+   - Per-program RTL PDF export rendered with Vazirmatn and Jalali dates.
 4. **GitHub Actions**
    - CI workflow (`ci.yml`) and Release workflow (`release.yml`).
 
@@ -49,5 +51,5 @@
 - See `CHANGELOG.md` for version history.
 - See `RELEASES.md` for official releases.
 
-Last Updated: 2026-11-05
+Last Updated: 2026-11-07
 Language: English (Rule 3)

@@ -2,29 +2,29 @@
 
 ## [Unreleased]
 
-### Removed
-- **2026-11-07**: Deleted `.github/dependabot.yml`. Dependency versions and GitHub
-  Action versions are now updated manually. Nothing else changes: Dependabot
-  security alerts were never active here because they depend on the repository
-  setting *Dependency graph*, which is disabled (the SBOM endpoint answers 404),
-  not on this configuration file. Re-enabling that setting would restore alerts
-  even without the file.
-- **2026-11-07**: Deleted the `build.yml` (release candidate), `security.yml`
-  (dependency review and dependency-graph submission) and `cleanup.yml` (artifact
-  retention) workflows. The pipeline is now `ci.yml` for validation and
-  `release.yml` for official releases. Consequences: no per-merge unsigned release
-  candidate and no scheduled artifact cleanup (GitHub expires artifacts at their own
-  retention: 7 days for CI artifacts, 30 days for release artifacts). The removed
-  dependency review was already advisory because the repository setting
-  *Dependency graph* is disabled.
-
 ### Added
+- **2026-11-07**: Bundled official `Vazirmatn` font family (`Regular`, `Medium`,
+  `SemiBold`, `Bold`) across the Compose Material 3 typography, Android theme and PDF
+  exporter, alongside a custom fitness dumbbell/crest launcher and header icon.
+- **2026-11-07**: Dashboard BMI calculation and classification (`BmiCalculator`) derived
+  from user height and weight.
+- **2026-11-07**: Tabbed training-day views, drag-and-drop exercise reordering persisted in
+  Room, visual square set boxes (`ExerciseSetsSquares`), and a searchable duration select
+  picker (`DurationCatalog`).
+- **2026-11-07**: Exact Gregorian-to-Jalali (Solar Hijri) calendar formatting in
+  `PantherDateFormat` with unit tests, preserving epoch-millisecond database storage.
 - **2026-11-07**: Owner operating rules recorded in `AGENTS.md` section 19.1: no pull
   request and no merge without an explicit request, a single `dev` branch, CI only after
   a pull request, and a release that starts only when the owner sends the word `tag`.
   The same rules are summarised in `docs/GITHUB_ACTIONS.md`.
 
 ### Changed
+- **2026-11-07**: Renamed application display title to `Panther` across launcher, headers,
+  dashboard and onboarding.
+- **2026-11-07**: Converted `HomeScreen` to a read-only dashboard highlighting the active
+  program in green; redesigned `ProgramsScreen` with compact cards, active toggle switches,
+  and a bottom-left creation FAB; moved program rename and delete actions inside
+  `ProgramEditorScreen`.
 - **2026-11-07**: `ci.yml` runs on the `pull_request` event only. The `push` to `main`
   trigger and `workflow_dispatch` were removed, so there is no post-merge health check
   and no manual run (owner rule, `AGENTS.md` section 19.1).
@@ -39,6 +39,25 @@
 - **2026-11-07**: Corrected the documented CI triggers: `ci.yml` runs on pull requests
   targeting `main`, on pushes to `main` and on manual dispatch, not on pushes to any
   branch.
+
+### Removed
+- **2026-11-07**: Removed the History screen/navigation route, program archiving, Home
+  "New Program" button, Home "Recent Programs" section, card-level Edit/Delete buttons,
+  and profile photo upload/display while keeping Room schema v1 intact.
+- **2026-11-07**: Deleted `.github/dependabot.yml`. Dependency versions and GitHub
+  Action versions are now updated manually. Nothing else changes: Dependabot
+  security alerts were never active here because they depend on the repository
+  setting *Dependency graph*, which is disabled (the SBOM endpoint answers 404),
+  not on this configuration file. Re-enabling that setting would restore alerts
+  even without the file.
+- **2026-11-07**: Deleted the `build.yml` (release candidate), `security.yml`
+  (dependency review and dependency-graph submission) and `cleanup.yml` (artifact
+  retention) workflows. The pipeline is now `ci.yml` for validation and
+  `release.yml` for official releases. Consequences: no per-merge unsigned release
+  candidate and no scheduled artifact cleanup (GitHub expires artifacts at their own
+  retention: 7 days for CI artifacts, 30 days for release artifacts). The removed
+  dependency review was already advisory because the repository setting
+  *Dependency graph* is disabled.
 
 ## [v1.0.0] - 2026-11-07
 
