@@ -42,7 +42,7 @@
 
 ## Artifact Retention
 - Official Release APKs are kept permanently in GitHub Releases.
-- Temporary build artifacts are removed by `cleanup.yml` after 30 days; artifacts named
-  `panther-official-release-*` are always preserved.
+- Build artifacts expire automatically at their retention: 7 days for CI artifacts, 30 days
+  for `panther-official-release-*` artifacts. No scheduled cleanup workflow is needed.
 
 Language: English.

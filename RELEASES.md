@@ -24,8 +24,7 @@ Releases are managed via GitHub Actions (`release.yml`) and tagged with Semantic
 - Never upload signing keys or passwords.
 
 ## Maintenance
-- Temporary artifacts are cleaned by `cleanup.yml` after the retention window.
-- Artifacts named `panther-official-release-*` are always preserved.
+- Build artifacts expire automatically at their own retention (7 days for CI artifacts, 30 days for `panther-official-release-*`).
 - Official releases are kept permanently in GitHub Releases.
 
 Language: English (Rule 3)

@@ -24,9 +24,9 @@ The following secrets must be configured in the repository settings (Settings ->
 - **Security**: The Keystore file must be kept outside the repository (Rule 13 of AGENTS.md).
 
 ## Permissions
-- The `release.yml` workflow requires `contents: write`, `packages: write`, `actions: write`, and `deployments: write` permissions.
-- The `cleanup.yml` workflow requires `actions: write` and `contents: read`.
-- Other workflows use `contents: read` only.
+- The `release.yml` workflow requires `contents: write` (it creates the draft GitHub Release).
+- The `ci.yml` workflow uses `contents: read` only.
+- Scheduled cleanup no longer exists, so no workflow needs `actions: write`.
 
 ## Security Best Practices (Rule 13)
 - Never hardcode passwords or keys in workflow files.
@@ -38,4 +38,5 @@ The following secrets must be configured in the repository settings (Settings ->
 ## Maintenance
 - Review Secrets periodically.
 - Rotate Keystore passwords if compromised (requires new Keystore and release process).
-- Ensure `cleanup.yml` is running daily to manage storage.
+- Build artifacts expire automatically (7 days for CI, 30 days for releases); no scheduled
+  cleanup workflow exists any more.
