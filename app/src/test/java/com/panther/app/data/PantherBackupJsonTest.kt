@@ -21,18 +21,31 @@ import org.junit.Test
 class PantherBackupJsonTest {
 
     private fun sample() = PantherBackup(
-        profile = UserProfile("Test", age = 28, heightCm = 175.5),
+        profile = UserProfile("Test", age = 28, heightCm = 175.5, weightKg = 74.0),
         programs = listOf(
-            ProgramBackup("Plan", 1_700_000_000_000, true, false, listOf(
-                DayBackup("Day 1", 0, listOf(
-                    ExerciseBackup("Squat", 0, listOf(
-                        SetBackup(1, TargetType.REPS, 8, null, null),
-                        SetBackup(2, TargetType.DURATION, null, 1, 30),
-                    )),
-                )),
-            ), originalId = 7),
+            ProgramBackup(
+                "Plan",
+                1_700_000_000_000,
+                true,
+                listOf(
+                    DayBackup(
+                        "Day 1",
+                        0,
+                        listOf(
+                            ExerciseBackup(
+                                "Squat",
+                                0,
+                                listOf(
+                                    SetBackup(1, TargetType.REPS, 8, null, null),
+                                    SetBackup(2, TargetType.DURATION, null, 1, 30),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+                originalId = 7,
+            ),
         ),
-        profileImageBase64 = "cGhvdG8=",
     )
 
     @Test
@@ -54,9 +67,9 @@ class PantherBackupJsonTest {
     }
 
     @Test
-    fun programWithoutIdDecodesWithZeroOriginalId() {
+    fun programWithoutIdAndWithLegacyFieldsDecodesCleanly() {
         val json = """
-            {"format":"panther-backup","version":1,"profile":null,
+            {"format":"panther-backup","version":1,"profile":null,"profileImageBase64":"cGhvdG8=",
              "programs":[{"name":"P","createdAt":1700000000000,"active":false,"archived":false,
                "days":[{"name":"D","order":0,"exercises":[{"name":"E","order":0,
                  "sets":[{"number":1,"type":"REPS","value":5,"minutes":null,"seconds":null}]}]}]}]}
@@ -64,6 +77,19 @@ class PantherBackupJsonTest {
         val decoded = PantherBackupJson.decode(json)
         assertEquals(0L, decoded.programs.single().originalId)
         assertNull(decoded.profile)
+    }
+
+    @Test
+    fun rejectsActiveAndArchivedConflictInLegacyJson() {
+        val json = """
+            {"format":"panther-backup","version":1,"profile":null,
+             "programs":[{"name":"P","createdAt":1700000000000,"active":true,"archived":true,"days":[]}]}
+        """.trimIndent()
+        try {
+            PantherBackupJson.decode(json)
+            fail("Expected conflicting active+archived backup to be rejected")
+        } catch (_: IllegalArgumentException) {
+        }
     }
 
     @Test

@@ -7,9 +7,11 @@ import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextDirectionHeuristics
 import android.text.TextPaint
+import androidx.core.content.res.ResourcesCompat
 import com.panther.app.R
 import com.panther.app.core.format.PantherDateFormat
 import com.panther.app.domain.model.ProgramBackup
+import com.panther.app.domain.model.TargetType
 import java.io.OutputStream
 
 object ProgramPdfExporter {
@@ -24,8 +26,18 @@ object ProgramPdfExporter {
     fun write(context: Context, program: ProgramBackup, output: OutputStream) {
         val document = PdfDocument()
         try {
-            val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 12f; color = android.graphics.Color.BLACK }
-            val titlePaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 20f; color = android.graphics.Color.BLACK; isFakeBoldText = true }
+            val regularFont = runCatching { ResourcesCompat.getFont(context, R.font.vazirmatn_regular) }.getOrNull()
+            val boldFont = runCatching { ResourcesCompat.getFont(context, R.font.vazirmatn_bold) }.getOrNull()
+            val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+                textSize = 12f
+                color = android.graphics.Color.BLACK
+                if (regularFont != null) typeface = regularFont
+            }
+            val titlePaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+                textSize = 18f
+                color = android.graphics.Color.BLACK
+                if (boldFont != null) typeface = boldFont else isFakeBoldText = true
+            }
             var pageNumber = 1
             var page = document.startPage(PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create())
             var y = TOP_BASELINE
@@ -37,7 +49,8 @@ object ProgramPdfExporter {
             }
             fun drawLine(text: String, title: Boolean = false) {
                 val paint = if (title) titlePaint else textPaint
-                val layout = StaticLayout.Builder.obtain(text, 0, text.length, paint, CONTENT_WIDTH)
+                val rendered = PantherDateFormat.persianDigits(text)
+                val layout = StaticLayout.Builder.obtain(rendered, 0, rendered.length, paint, CONTENT_WIDTH)
                     .setAlignment(Layout.Alignment.ALIGN_NORMAL)
                     .setTextDirection(TextDirectionHeuristics.RTL)
                     .setIncludePad(false)
@@ -49,7 +62,7 @@ object ProgramPdfExporter {
                 page.canvas.restore()
                 y += layout.height + LINE_SPACING
             }
-            drawLine(program.name, title = true)
+            drawLine("${context.getString(R.string.app_name)} — ${program.name}", title = true)
             drawLine(context.getString(R.string.created_at, PantherDateFormat.medium(program.createdAt)))
             drawLine(context.getString(R.string.pdf_plan_only))
             y += 8f
@@ -59,8 +72,8 @@ object ProgramPdfExporter {
                     drawLine(exercise.name, title = true)
                     exercise.sets.sortedBy { it.setNumber }.forEach { set ->
                         val target = when (set.targetType) {
-                            com.panther.app.domain.model.TargetType.REPS -> context.getString(R.string.pdf_repetitions, set.targetValue ?: 0)
-                            com.panther.app.domain.model.TargetType.DURATION -> context.getString(R.string.pdf_duration, set.targetMinutes ?: 0, set.targetSeconds ?: 0)
+                            TargetType.REPS -> context.getString(R.string.pdf_repetitions, set.targetValue ?: 0)
+                            TargetType.DURATION -> context.getString(R.string.pdf_duration, set.targetMinutes ?: 0, set.targetSeconds ?: 0)
                         }
                         drawLine(context.getString(R.string.pdf_set_line, set.setNumber, target))
                     }
