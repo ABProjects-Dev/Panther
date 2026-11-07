@@ -32,6 +32,8 @@
    - Vulnerability alerts come from GitHub's dependency graph, which an owner must
      enable under *Settings → Code security → Dependency graph*; it is currently
      disabled, so no automated advisory gate is active.
+   - Dependency and Action version updates are performed manually and validated by
+     `ci.yml`; no automated update bot is configured.
 2. **Performance**
    - Efficient flows and coroutines.
    - Bounded artifact retention (7 days for CI artifacts, 30 days for release

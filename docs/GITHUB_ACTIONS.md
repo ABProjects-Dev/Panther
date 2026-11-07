@@ -15,9 +15,10 @@ one pipeline ships it, without duplicate Gradle runs or extra scheduled jobs.
 
 ### 1. `ci.yml` — Continuous Integration
 
-- **Trigger:** push to `main`; pull requests targeting `main`; manual dispatch.
-  Pushes to short-lived branches do **not** start a run, because the pull
-  request already validates that branch and a second run would be identical.
+- **Trigger:** pull requests targeting `main` only. Pushes to `main` and manual
+  dispatch do **not** start a run (owner rule, `AGENTS.md` section 19.1): the
+  pull request already validated the same commit, so a post-merge run would be
+  duplicate work. Consequently there is no post-merge health check on `main`.
 - **Jobs:** `lint-and-unit-tests` → `instrumentation-tests`. Lint, unit tests,
   the debug APK and the Room schema check share one Gradle invocation:
   `./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug`.
@@ -60,12 +61,41 @@ one pipeline ships it, without duplicate Gradle runs or extra scheduled jobs.
 | Workflow | What it did | Consequence of the removal |
 | --- | --- | --- |
 | `build.yml` (Build Release Candidate) | Built an unsigned release APK on every push to `main` and verified its metadata with `aapt2`. | No per-merge release candidate. `ci.yml` still produces a debug APK; `release.yml` produces the signed release APK from a tag. |
-| `security.yml` (Security Scan) | Ran `dependency-review` on pull requests and published the Gradle dependency graph. | No automated dependency review in the pipeline. Note: the gate was already advisory, because the repository setting *Settings → Code security → Dependency graph* is disabled (the SBOM endpoint returns 404). Re-enabling that setting restores Dependabot vulnerability alerts even without the workflow. |
+| `security.yml` (Security Scan) | Ran `dependency-review` on pull requests and published the Gradle dependency graph. | No automated dependency review in the pipeline. Note: the gate was already advisory, because the repository setting *Settings → Code security → Dependency graph* is disabled (the SBOM endpoint returns 404). Re-enabling that setting restores Dependabot vulnerability alerts, which do not need any workflow. |
 | `cleanup.yml` (Cleanup Old Artifacts) | Deleted artifacts older than 30 days, never touching `panther-official-release-*`. | No scheduled deletion job. GitHub still expires artifacts automatically at their own retention (7 days for CI artifacts, 30 days for release artifacts), so storage stays bounded. |
+
+## Dependency updates
+
+`.github/dependabot.yml` was removed on 2026-11-07, so **no bot proposes
+dependency or Action version updates any more**. Updates are raised manually as
+a normal branch and pull request and are validated by `ci.yml` like any other
+change.
+
+What this does and does not change:
+
+- **Lost:** automatic pull requests for newer Gradle dependencies and newer
+  GitHub Actions versions. Dependabot previously supplied, for example, the
+  Gradle wrapper 8.11.1 -> 9.8.2 bump and several Action major bumps.
+- **Not lost:** Dependabot **security alerts**. Those are driven by the
+  repository setting *Settings -> Code security -> Dependency graph* and are
+  currently inactive because that setting is disabled (the SBOM endpoint
+  answers 404). Enabling it restores alerts without restoring this file.
+- **Existing bot pull requests are not closed automatically.** Once the
+  configuration is removed they simply stop being rebased or updated by the bot
+  and must be handled manually.
+
+Known blockers for manual upgrades, all verified in CI:
+
+- `androidx.core` 1.19.1 requires Android Gradle Plugin 9.1.0 or higher
+  (project is on 8.10.1).
+- `hilt` 2.60.1 requires AGP 9.0.0 or higher.
+- `kotlinx-coroutines` 1.11.0 resolves `kotlin-stdlib` 2.2.20, whose metadata
+  cannot be read by Kotlin 2.0.21.
+- `org.json` 20260814 is the one pending bump that CI proved green.
 
 ## Branch Strategy
 
-`AGENTS.md` section 6 is authoritative:
+`AGENTS.md` section 6 is authoritative for the general model:
 
 - `main`: stable, approved code.
 - `feature/*`: new functionality.
@@ -73,7 +103,23 @@ one pipeline ships it, without duplicate Gradle runs or extra scheduled jobs.
 - `refactor/*`: internal improvements.
 - `docs/*`: documentation-only changes.
 
-There is no `develop` branch.
+For this repository the owner replaces those prefixes with a single branch named
+`dev` (`AGENTS.md` section 19.1): all changes go to `dev`, and no other
+development branches are created. There is no `develop` branch.
+
+## Operating rules set by the owner
+
+Recorded in `AGENTS.md` section 19.1 and repeated here because they change how
+this pipeline is used:
+
+- Do not open a pull request unless the owner directly asks for one.
+- Do not merge a pull request unless the owner directly asks for the merge; a
+  green pipeline is not an approval.
+- All changes go to the single `dev` branch.
+- CI runs only after a pull request; when it is green, stop and wait for the
+  owner's approval before merging.
+- A release starts only when the owner sends the word `tag`: list the patch,
+  minor and major options with the resulting versions, then wait for the choice.
 
 ## Release Procedure
 
