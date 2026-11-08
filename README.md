@@ -1,5 +1,7 @@
 # Panther
 
+> [نسخهٔ فارسی (Persian README)](.github/README.md)
+
 Panther is an offline-first Android application for creating and managing personal bodybuilding workout plans. It is not a workout tracking application. Persian is the primary interface language, rendered RTL with the Vazirmatn typeface and Jalali (Solar Hijri) calendar.
 
 ## Technology
@@ -52,7 +54,7 @@ From the repository root:
 ./gradlew :app:installDebug               # requires a connected device or emulator
 ```
 
-On Windows use `gradlew.bat`. Alternatively open the root directory in Android Studio, sync Gradle, select the app configuration, and run it on a device. The debug APK is generated at `app/build/outputs/apk/debug/app-debug.apk`.
+On Windows use `gradlew.bat`. Alternatively open the root directory in Android Studio, sync Gradle, select the app configuration, and run it on a device. Generated APKs follow the `Panther Vx.y.z.apk` naming convention (for example, `app/build/outputs/apk/debug/Panther V0.1.0.apk` for local debug builds and `app/build/outputs/apk/release/Panther Vx.y.z.apk` for tagged releases).
 
 ## Current status
 
@@ -60,12 +62,12 @@ The application features a three-destination navigation shell (`Home`, `Programs
 
 ## GitHub Actions
 
-Android CI runs on pull requests targeting `main` only; pushes to `main` and manual dispatch do not start a run (owner rule, `AGENTS.md` section 19.1). It builds a debug APK, runs unit tests and lint, verifies the committed Room schema baseline, and runs instrumented tests on an API 29 emulator (documentation-only changes skip the emulator).
+Android CI runs on pull requests targeting `main` only; pushes to `main` and manual dispatch do not start a run (owner rule, `AGENTS.md` section 19.1). It builds the debug and androidTest APKs, runs unit tests and lint, verifies the committed Room schema baseline, and runs instrumented tests on an API 29 emulator (documentation-only changes skip the emulator).
 
 Two workflows are defined (with actions pinned to immutable commit SHAs):
 
-- `ci.yml` — lint, unit tests, debug APK, Room schema baseline check and instrumentation tests (1-day retention for debug APK, 3-day retention for reports).
-- `release.yml` — validates SemVer tag format and `origin/main` ancestry, runs unit tests and lint, builds and signs the official APK from the exact tag commit, verifies APK Signature Scheme v2/v3 via `apksigner`, generates a `SHA-256` checksum, and creates a draft GitHub Release that the owner publishes manually.
+- `ci.yml` — lint, unit tests, debug & androidTest APK assembly, Room schema baseline check and instrumentation tests (1-day retention for debug APK, 3-day retention for reports).
+- `release.yml` — validates SemVer tag format and `origin/main` ancestry, runs unit tests and lint, builds and signs `Panther Vx.y.z.apk` from the exact tag commit, verifies APK Signature Scheme v2/v3 via `apksigner`, generates `Panther Vx.y.z.apk.sha256`, and publishes the GitHub Release directly (`draft: false`) including the Persian annotated tag description.
 
 See [docs/GITHUB_ACTIONS.md](docs/GITHUB_ACTIONS.md) for the authoritative description.
 
