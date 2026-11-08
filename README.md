@@ -62,7 +62,7 @@ The application features a three-destination navigation shell (`Home`, `Programs
 
 ## GitHub Actions
 
-Android CI runs on pull requests targeting `main` only; pushes to `main` and manual dispatch do not start a run (owner rule, `AGENTS.md` section 19.1). It builds the debug and androidTest APKs, runs unit tests and lint, verifies the committed Room schema baseline, and runs instrumented tests on an API 29 emulator (documentation-only changes skip the emulator).
+Android CI runs on pull requests targeting `main` only (excluding documentation-only pull requests via `paths-ignore`); pushes to `main`, manual dispatch, and documentation-only changes do not start a CI run (owner rules, `AGENTS.md` section 19.1). When triggered, it builds the debug and androidTest APKs, runs unit tests and lint, verifies the committed Room schema baseline, and runs instrumented tests on an API 29 emulator (non-code workflow/metadata edits such as `release.yml` skip the emulator).
 
 Two workflows are defined (with actions pinned to immutable commit SHAs):
 

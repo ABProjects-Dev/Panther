@@ -12,8 +12,11 @@ and both workflows use `concurrency` groups and job-scoped least-privilege
 
 ### 1. `ci.yml` — Continuous Integration
 
-- **Trigger:** pull requests targeting `main` only (owner rule, `AGENTS.md`
-  section 19.1). Pushes to `main` and manual dispatch do **not** start a run.
+- **Trigger:** pull requests targeting `main` only, excluding documentation-only
+  changes (`**.md`, `docs/**`, `LICENSE`, `.gitattributes`,
+  `.github/ISSUE_TEMPLATE/**`) via `paths-ignore` (owner rules, `AGENTS.md`
+  section 19.1). Pushes to `main`, manual dispatch, and documentation-only pull
+  requests do **not** start a run.
 - **Jobs:** `lint-and-unit-tests` → `instrumentation-tests`.
   `lint-and-unit-tests` runs
   `./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace`,
@@ -24,11 +27,11 @@ and both workflows use `concurrency` groups and job-scoped least-privilege
   - `panther-debug-apk` (`Panther V0.1.0.apk`, retention: `1` day)
   - `android-check-reports` (retention: `3` days)
   - `instrumentation-reports` (retention: `3` days)
-- **Instrumentation gating:** the API 29 emulator (`Nexus 6` profile) runs
-  whenever source code, resources, Gradle build files, or
-  `.github/workflows/ci.yml` change. Pure documentation/metadata edits (`docs/`,
-  `*.md`, `.github/README.md`, `.gitattributes`, issue/PR templates,
-  `release.yml`, `LICENSE`, etc.) skip the emulator.
+- **Instrumentation gating:** documentation-only pull requests skip `ci.yml`
+  entirely via `paths-ignore`. When `ci.yml` does run, the API 29 emulator
+  (`Nexus 6` profile) executes whenever source code, resources, Gradle build
+  files, or `.github/workflows/ci.yml` change, while non-app edits (such as
+  `release.yml` alone) skip the emulator.
 - **Permissions:** `contents: read`. Timeouts: 30 minutes (lint and unit
   tests), 45 minutes (instrumentation tests).
 
@@ -91,8 +94,13 @@ through `ci.yml`.
 - Do not merge a pull request unless the owner directly asks for the merge.
 - Commit all changes to the single development branch (`dev`, or the fixed Arena
   session branch).
-- CI runs only after a pull request; when green, stop and wait for owner
-  approval.
+- CI runs only after a pull request that touches non-documentation files;
+  documentation-only pull requests skip `ci.yml` via `paths-ignore` and do not
+  require a CI run. When CI runs and is green, stop and wait for owner approval.
+- Before creating/pushing a release tag, update all relevant documentation
+  (`CHANGELOG.md`, `RELEASES.md`, `README.md`, `.github/README.md`, `docs/*`),
+  submit those updates in the release Pull Request, and merge them into `main`
+  (with owner approval) so the tagged commit already contains finalized docs.
 - Releases start only when the owner sends the word `tag`; once a tag is
   approved and pushed with a **Persian** annotated description, `release.yml`
   publishes the release directly (`draft: false`) with APK filename

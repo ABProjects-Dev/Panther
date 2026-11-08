@@ -8,14 +8,14 @@
 
 ## Release Process
 
-### Step 1: Preparation
-1. Ensure all approved changes are merged into `main` after passing `ci.yml`.
-2. Update `CHANGELOG.md`, `RELEASES.md`, `README.md`, and `.github/README.md` as needed.
+### Step 1: Pre-Release Documentation & Merge (`AGENTS.md` Section 19.1)
+1. Update `CHANGELOG.md`, `RELEASES.md`, `README.md`, `.github/README.md`, and affected files in `docs/` for the upcoming release version **before** tagging.
+2. Include these documentation updates in the release Pull Request, verify `ci.yml` passes if code/build/workflow files changed (documentation-only PRs skip `ci.yml` via `paths-ignore`), and merge the Pull Request into `main` upon explicit owner approval so the commit to be tagged on `main` already contains finalized documentation.
 3. Ensure the four signing secrets (`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`) are configured in GitHub Secrets (see `docs/SECRETS_SETUP.md`). For local release builds outside CI, either set `RELEASE_STORE_FILE` / `RELEASE_STORE_PASSWORD` / `RELEASE_KEY_ALIAS` / `RELEASE_KEY_PASSWORD` in your shell environment or provide an untracked `app/signing.properties` file.
 
 ### Step 2: Tagging (`AGENTS.md` Section 19.1)
 1. When the project owner sends `tag`, present the next patch, minor, and major version options based on the latest tag and wait for explicit selection.
-2. After the owner selects a version, create and push an annotated tag pointing to the target commit on `main`, writing the tag description in **Persian**:
+2. Once the owner selects a version (and after ensuring Step 1's documentation updates for that version are merged into `main`), create and push an annotated tag pointing to the target commit on `main`, writing the tag description in **Persian**:
    ```bash
    git tag -a v1.0.2 -m "انتشار نسخه ۱.۰.۲ — بهبود پایداری، امنیت و تجربهٔ کاربری"
    git push origin refs/tags/v1.0.2
