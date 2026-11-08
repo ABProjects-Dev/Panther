@@ -30,7 +30,7 @@ jobs:
       # ubuntu-latest runners ship the Android SDK (platform 36 is present), so no
       # setup-android step is required; adding one previously failed the job.
       - name: Run unit tests, lint and assemble
-        run: ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --stacktrace
+        run: ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace
       - name: Upload debug APK
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
