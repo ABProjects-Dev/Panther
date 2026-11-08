@@ -1,47 +1,46 @@
 # Panther Project Architecture
 
 ## Overview
-The Panther project is an Android application built with Kotlin, Jetpack Compose, and Hilt. It follows a clean architecture pattern with Domain, Data, and Presentation layers.
+Panther is an offline-first Android application built with Kotlin, Jetpack Compose (Material 3), Room, DataStore, and Hilt. It follows a clean layered architecture separating Presentation, Domain, and Data concerns.
 
 ## Layers
 
 ### 1. Presentation Layer
-- **Components**: Composable screens, ViewModels, Navigation.
-- **Technology**: Jetpack Compose, Hilt, Kotlin Coroutines.
+- **Components**: Composable screens (`HomeScreen`, `ProgramsScreen`, `ProgramEditorScreen`, `ProfileScreen`, `SettingsScreen`), ViewModels (`ProgramsViewModel`, `ProfileViewModel`, `SettingsViewModel`), Navigation (`PantherNavigation`), Design System (`Vazirmatn` typography, `PantherExtendedColors`, reusable components), and Jalali date formatting (`PantherDateFormat`).
+- **Technology**: Jetpack Compose, Material 3, Hilt, Kotlin Coroutines & StateFlow, Edge-to-Edge `SystemBarStyle`.
 - **Location**: `app/src/main/java/com/panther/app/feature/`, `app/src/main/java/com/panther/app/core/`.
 
 ### 2. Domain Layer
-- **Components**: Use cases, Models, Validation logic.
-- **Technology**: Kotlin, Coroutines.
+- **Components**: Immutable domain models (`WorkoutProgram`, `TrainingDay`, `Exercise`, `ExerciseSet`, `ExerciseWithSets`, `UserProfile`, `PantherBackup`), `BmiCalculator`, `DurationCatalog`, `WorkoutValidation`, `PantherRepository` interface, and use cases.
+- **Technology**: Pure Kotlin and Coroutines Flow.
 - **Location**: `app/src/main/java/com/panther/app/domain/`.
 
 ### 3. Data Layer
-- **Components**: Repository, DAO (Room), Backup JSON codec, DataStore.
-- **Technology**: Room, KSP, DataStore, Android SDK 36.
-- **Location**: `app/src/main/java/com/panther/app/data/`.
+- **Components**: `RoomPantherRepository`, `PantherDatabase` & `PantherDao` (Room schema v1 with foreign-key cascades and transactional `@Relation` queries), `PantherBackupJson` codec, `ProgramPdfExporter` (RTL A4 PDF generator with Vazirmatn fonts), `SafeUriOutput` (SAF stream helper), and `ThemePreferences` (DataStore).
+- **Technology**: Room 2.6.1, KSP, Preferences DataStore, Android `PdfDocument`.
+- **Location**: `app/src/main/java/com/panther/app/data/`, `app/src/main/java/com/panther/app/core/settings/`.
 
 ## Build System
-- **Gradle**: Version 8.11.1
-- **Android Gradle Plugin**: Integrated via `libs.plugins`
+- **Gradle Wrapper**: Version 9.8.2
+- **Android Gradle Plugin**: 8.10.1 (via `gradle/libs.versions.toml`)
 - **Kotlin**: 2.0.21 (JVM target 17)
-- **Compose**: Enabled
+- **Compose**: Enabled (BOM `2024.12.01`)
 - **SDK**: Compile/Target 36, Min 26
 
 ## GitHub Actions Architecture
-- **CI**: Lint, unit tests, debug APK, Room schema baseline check and instrumentation tests (ci.yml)
-- **Release**: Signed official release on `v*.*.*` tags, published as a draft GitHub Release (release.yml)
+- **CI (`ci.yml`)**: Runs on pull requests targeting `main` — unit tests, Android Lint, debug APK assembly, Room schema baseline verification, and API 29 emulator instrumentation tests.
+- **Release (`release.yml`)**: Validates SemVer tags on `origin/main`, runs unit tests and lint, builds and signs the release APK via environment-variable secrets, verifies APK Signature Scheme v2/v3 with `apksigner`, generates `.sha256` checksums, and creates a draft GitHub Release.
+- All workflow actions are pinned to full 40-character commit SHAs.
 
-The release candidate, security scan and artifact cleanup workflows were removed on 2026-11-07; see
-[docs/GITHUB_ACTIONS.md](GITHUB_ACTIONS.md) for the consequences.
+See [docs/GITHUB_ACTIONS.md](GITHUB_ACTIONS.md) for full pipeline details.
 
 ## Security (Rule 13)
-- Keystore and Secrets managed via GitHub Secrets.
-- No sensitive data in repository.
+- Keystore and signing credentials are stored exclusively in GitHub Secrets and passed via process environment variables during CI release builds.
+- No network permissions, analytics SDKs, or sensitive credentials exist in the repository.
 
 ## Maintenance
-- Artifacts expire automatically at their retention (7 days for CI artifacts, 30 days for release
-  artifacts); no scheduled cleanup workflow is needed.
-- Room schemas are exported to `app/schemas`; keep them committed and add migrations on change.
+- Artifacts expire automatically (`1` day for CI debug APKs, `3` days for CI reports, `30` days for release workflow artifacts).
+- Room schemas are exported to `app/schemas` and exposed to `androidTest` assets for `MigrationTestHelper`; every future schema version bump must commit its exported JSON and explicit migration.
 
-Last Updated: 2026-11-05
+Last Updated: 2026-11-07
 Language: English (Rule 3)

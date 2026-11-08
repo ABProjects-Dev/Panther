@@ -2,145 +2,88 @@
 
 ## Overview
 
-Panther uses **two** workflows: `ci.yml` validates every change and
-`release.yml` produces the official, signed release. Both use `concurrency`
-groups and least-privilege `permissions`.
-
-The release candidate, security scan and artifact cleanup workflows were removed
-on 2026-11-07 (see `CHANGELOG.md`) so that one pipeline validates the code and
-one pipeline ships it, without duplicate Gradle runs or extra scheduled jobs.
-`docs/GITHUB_ACTIONS.md` is the authoritative description of the workflows.
+Panther uses **two** workflows: `ci.yml` validates pull requests and
+`release.yml` produces the official, signed release. All third-party and
+first-party actions are pinned to full 40-character commit SHAs, and both
+workflows use `concurrency` groups and job-scoped least-privilege `permissions`.
 
 ## Workflows
 
 ### 1. `ci.yml` — Continuous Integration
 
-- **Trigger:** pull requests targeting `main` only. Pushes to `main` and manual
-  dispatch do **not** start a run (owner rule, `AGENTS.md` section 19.1): the
-  pull request already validated the same commit, so a post-merge run would be
-  duplicate work. Consequently there is no post-merge health check on `main`.
-- **Jobs:** `lint-and-unit-tests` → `instrumentation-tests`. Lint, unit tests,
-  the debug APK and the Room schema check share one Gradle invocation:
-  `./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug`.
-- **Artifacts** (retention: 7 days): `panther-debug-apk`,
-  `android-check-reports`, `room-schema`, `instrumentation-reports`.
-- **Room schema gate:** the job fails when `app/schemas` changes during the
-  build, which means the committed schema baseline is stale and must be
-  regenerated and committed.
-- **Instrumentation gating:** the emulator starts only when the change touches
-  code or resources. Documentation-only changes (`docs/`, `*.md`, `.github/`,
-  `README`, `LICENSE`, `SECURITY`, `CHANGELOG`, `RELEASES`) skip it, which keeps
-  the slowest step off documentation pull requests.
+- **Trigger:** pull requests targeting `main` only (owner rule, `AGENTS.md`
+  section 19.1). Pushes to `main` and manual dispatch do **not** start a run.
+- **Jobs:** `lint-and-unit-tests` → `instrumentation-tests`.
+  `lint-and-unit-tests` runs `./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --stacktrace`
+  and verifies `app/schemas` matches the committed Room schema baseline.
+- **Artifacts:**
+  - `panther-debug-apk` (retention: `1` day)
+  - `android-check-reports` (retention: `3` days)
+  - `instrumentation-reports` (retention: `3` days)
+- **Instrumentation gating:** the API 29 emulator runs whenever source code,
+  resources, Gradle build files, or `.github/workflows/ci.yml` change. Pure
+  documentation/metadata edits (`docs/`, `*.md`, `.gitattributes`, issue/PR
+  templates, `release.yml`, `LICENSE`, etc.) skip the emulator.
 - **Permissions:** `contents: read`. Timeouts: 30 minutes (lint and unit
   tests), 45 minutes (instrumentation tests).
 
 ### 2. `release.yml` — Official Release
 
-- **Trigger:** push of a tag matching `v*.*.*`, or manual dispatch with an
-  existing tag of the same format.
+- **Trigger:** push of a tag matching `v*.*.*`, or `workflow_dispatch` with an
+  existing `v*.*.*` tag.
 - **Jobs:** `validate-tag` → `build-and-sign-release` → `publish-release`.
-- **Tag drives versioning:** `vX.Y.Z` becomes `versionName = X.Y.Z` and
-  `versionCode = X*10000 + Y*100 + Z`, passed to Gradle as
-  `-PreleaseVersionName` / `-PreleaseVersionCode`. An invalid tag fails the
-  first job before anything is built.
-- **Signing:** `app/signing.properties` and `app/release.jks` are generated
-  from secrets at build time and are never committed
-  (`app/build.gradle.kts` only enables signing when those files exist).
-- **Secrets:** `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`,
-  `KEY_PASSWORD`. See `docs/SECRETS_SETUP.md`.
-- **Verification:** `aapt2 dump badging` for package, version code and version
-  name, then `jarsigner -verify` for the signature.
-- **Artifact:** `panther-official-release-<tag>` (retention: 30 days).
-- **Publishing:** the GitHub Release is created as a **draft** and must be
-  published manually by the project owner (AGENTS.md section 17).
-- **Permissions:** `contents: write`. Concurrency never cancels a running
-  release.
+- **Tag & ancestry validation (`validate-tag`):**
+  - Validates `vMAJOR.MINOR.PATCH` with `MINOR` and `PATCH` in `0..99` so
+    `versionCode = MAJOR*10000 + MINOR*100 + PATCH` stays strictly monotonic.
+  - Verifies the tag exists and is an ancestor of `origin/main`.
+- **Exact tag checkout & quality gate (`build-and-sign-release`):**
+  - Checks out `refs/tags/<tag>` explicitly (ensuring `workflow_dispatch` always
+    builds the tagged commit rather than `HEAD` of the default branch).
+  - Runs `./gradlew :app:testDebugUnitTest :app:lintDebug` before touching
+    signing secrets.
+- **Signing & cleanup:**
+  - Decodes `KEYSTORE_BASE64` to `app/release.jks` (`0600`) and supplies
+    `RELEASE_STORE_FILE`, `RELEASE_STORE_PASSWORD`, `RELEASE_KEY_ALIAS`, and
+    `RELEASE_KEY_PASSWORD` via step environment variables (passwords are never
+    written to `signing.properties` in CI).
+  - Removes `app/release.jks` in an `if: always()` cleanup step immediately
+    after `assembleRelease`.
+- **Verification & checksums:**
+  - Inspects package/version metadata with `aapt2 dump badging`.
+  - Verifies Android APK Signature Scheme v2/v3 with
+    `apksigner verify --verbose --min-sdk-version 26 --print-certs`.
+  - Generates `app-release.apk.sha256` and verifies it prior to release upload.
+- **Artifact & draft release (`publish-release`):**
+  - Uploads workflow artifact `panther-official-release-<tag>` (retention:
+    `30` days).
+  - Creates a **draft** GitHub Release attaching both `app-release.apk` and
+    `app-release.apk.sha256` (`permissions: contents: write` is scoped strictly
+    to `publish-release`). Manual publication requires explicit owner approval
+    (`AGENTS.md` section 17).
 
 ## Removed workflows
 
 | Workflow | What it did | Consequence of the removal |
 | --- | --- | --- |
-| `build.yml` (Build Release Candidate) | Built an unsigned release APK on every push to `main` and verified its metadata with `aapt2`. | No per-merge release candidate. `ci.yml` still produces a debug APK; `release.yml` produces the signed release APK from a tag. |
-| `security.yml` (Security Scan) | Ran `dependency-review` on pull requests and published the Gradle dependency graph. | No automated dependency review in the pipeline. Note: the gate was already advisory, because the repository setting *Settings → Code security → Dependency graph* is disabled (the SBOM endpoint returns 404). Re-enabling that setting restores Dependabot vulnerability alerts, which do not need any workflow. |
-| `cleanup.yml` (Cleanup Old Artifacts) | Deleted artifacts older than 30 days, never touching `panther-official-release-*`. | No scheduled deletion job. GitHub still expires artifacts automatically at their own retention (7 days for CI artifacts, 30 days for release artifacts), so storage stays bounded. |
+| `build.yml` | Built an unsigned release candidate APK on pushes to `main`. | No per-merge unsigned RC; `ci.yml` validates PRs and `release.yml` builds signed tags. |
+| `security.yml` | Ran `dependency-review` on PRs. | Enable *Settings → Code security → Dependency graph* on GitHub to receive passive vulnerability alerts without extra workflow runs. |
+| `cleanup.yml` | Deleted artifacts older than 30 days on a schedule. | Replaced by tight per-artifact `retention-days` (`1`, `3`, and `30` days). |
 
 ## Dependency updates
 
-`.github/dependabot.yml` was removed on 2026-11-07, so **no bot proposes
-dependency or Action version updates any more**. Updates are raised manually as
-a normal branch and pull request and are validated by `ci.yml` like any other
-change.
+`.github/dependabot.yml` remains intentionally absent in accordance with
+`AGENTS.md` section 19.1 (no automatic branches or unrequested pull requests).
+Dependency and GitHub Action SHA updates are performed manually and verified
+through `ci.yml`.
 
-What this does and does not change:
-
-- **Lost:** automatic pull requests for newer Gradle dependencies and newer
-  GitHub Actions versions. Dependabot previously supplied, for example, the
-  Gradle wrapper 8.11.1 -> 9.8.2 bump and several Action major bumps.
-- **Not lost:** Dependabot **security alerts**. Those are driven by the
-  repository setting *Settings -> Code security -> Dependency graph* and are
-  currently inactive because that setting is disabled (the SBOM endpoint
-  answers 404). Enabling it restores alerts without restoring this file.
-- **Existing bot pull requests are not closed automatically.** Once the
-  configuration is removed they simply stop being rebased or updated by the bot
-  and must be handled manually.
-
-Known blockers for manual upgrades, all verified in CI:
-
-- `androidx.core` 1.19.1 requires Android Gradle Plugin 9.1.0 or higher
-  (project is on 8.10.1).
-- `hilt` 2.60.1 requires AGP 9.0.0 or higher.
-- `kotlinx-coroutines` 1.11.0 resolves `kotlin-stdlib` 2.2.20, whose metadata
-  cannot be read by Kotlin 2.0.21.
-- `org.json` 20260814 is the one pending bump that CI proved green.
-
-## Branch Strategy
-
-`AGENTS.md` section 6 is authoritative for the general model:
-
-- `main`: stable, approved code.
-- `feature/*`: new functionality.
-- `fix/*`: bug fixes.
-- `refactor/*`: internal improvements.
-- `docs/*`: documentation-only changes.
-
-For this repository the owner replaces those prefixes with a single branch named
-`dev` (`AGENTS.md` section 19.1): all changes go to `dev`, and no other
-development branches are created. There is no `develop` branch.
-
-## Operating rules set by the owner
-
-Recorded in `AGENTS.md` section 19.1 and repeated here because they change how
-this pipeline is used:
+## Operating rules set by the owner (`AGENTS.md` section 19.1)
 
 - Do not open a pull request unless the owner directly asks for one.
-- Do not merge a pull request unless the owner directly asks for the merge; a
-  green pipeline is not an approval.
-- All changes go to the single `dev` branch.
-- CI runs only after a pull request; when it is green, stop and wait for the
-  owner's approval before merging.
-- A release starts only when the owner sends the word `tag`: list the patch,
-  minor and major options with the resulting versions, then wait for the choice.
-
-## Release Procedure
-
-1. Ensure `ci.yml` is green on `main`.
-2. Update `CHANGELOG.md` and the release notes.
-3. Create and push the tag: `git tag vX.Y.Z && git push origin vX.Y.Z`.
-4. `release.yml` builds, signs and verifies the APK, then creates a draft
-   release.
-5. Review the draft, then publish it manually (owner approval is required by
-   `AGENTS.md` section 17).
-
-## Troubleshooting
-
-- **No Android SDK setup step is needed:** `ubuntu-latest` runners already ship
-  the Android SDK. `android-actions/setup-android@v3` was removed because it
-  fails on this runner image and masked the real Gradle failure.
-- **Room schema check fails:** `app/schemas` is out of date. Run a build, then
-  commit the regenerated schema as the new baseline.
-- **Signing failure:** verify the four secrets exist and `KEYSTORE_BASE64` is
-  valid Base64.
-- **Release fails:** inspect the `assembleRelease` output; minification is
-  enabled in release builds, so keep ProGuard rules current.
+- Do not merge a pull request unless the owner directly asks for the merge.
+- Commit all changes to the single development branch (`dev`, or the fixed Arena
+  session branch).
+- CI runs only after a pull request; when green, stop and wait for owner
+  approval.
+- Releases start only when the owner sends the word `tag`.
 
 Language: English.

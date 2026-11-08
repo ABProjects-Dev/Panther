@@ -54,16 +54,26 @@ fun PantherNavigation(
         bottomBar = {
             NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                 destinations.forEach { destination ->
-                    val isSelected = route == destination.route ||
+                    val isRootRoute = route == destination.route
+                    val isSelected = isRootRoute ||
                         (destination.route == "programs" && route == "editor/{id}") ||
                         (destination.route == "profile" && route == "settings")
                     NavigationBarItem(
                         selected = isSelected,
                         onClick = {
-                            navController.navigate(destination.route) {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
+                            val currentRoute = navController.currentBackStackEntry?.destination?.route
+                            val currentlyRoot = currentRoute == destination.route
+                            val currentlySelected = currentlyRoot ||
+                                (destination.route == "programs" && currentRoute == "editor/{id}") ||
+                                (destination.route == "profile" && currentRoute == "settings")
+                            if (currentlySelected && !currentlyRoot) {
+                                navController.popBackStack(destination.route, inclusive = false)
+                            } else if (!currentlyRoot) {
+                                navController.navigate(destination.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             }
                         },
                         icon = { Icon(destination.icon, contentDescription = null) },

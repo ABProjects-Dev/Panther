@@ -2,6 +2,7 @@ package com.panther.app.feature
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.panther.app.R
@@ -9,6 +10,7 @@ import com.panther.app.core.settings.ThemeChoice
 import com.panther.app.core.settings.ThemePreferences
 import com.panther.app.data.backup.PantherBackupJson
 import com.panther.app.data.backup.ProgramPdfExporter
+import com.panther.app.data.backup.SafeUriOutput
 import com.panther.app.domain.model.*
 import com.panther.app.domain.repository.PantherRepository
 import com.panther.app.domain.usecase.*
@@ -23,6 +25,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 data class DataState<T>(val value: T, val loading: Boolean = false, val error: Boolean = false)
+
+private fun logRecoverable(tag: String, throwable: Throwable) {
+    runCatching {
+        Log.w(tag, "Operation failed: ${throwable::class.java.simpleName}")
+    }
+}
 
 private suspend fun removeLegacyProfileImages(context: Context) {
     withContext(Dispatchers.IO) {
@@ -57,10 +65,16 @@ class ProgramsViewModel @Inject constructor(
     private val activateProgram: ActivateWorkoutProgramUseCase,
 ) : ViewModel() {
     val programs = observePrograms().map { DataState(it, loading = false) }
-        .catch { emit(DataState(emptyList(), loading = false, error = true)) }
+        .catch { e ->
+            if (e is CancellationException) throw e
+            logRecoverable("ProgramsViewModel", e)
+            emit(DataState(emptyList(), loading = false, error = true))
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DataState(emptyList(), loading = true))
     private val _error = MutableStateFlow(false)
     val error = _error.asStateFlow()
+
+    fun clearError() { _error.value = false }
 
     private fun execute(onComplete: (() -> Unit)? = null, block: suspend () -> Unit) {
         viewModelScope.launch {
@@ -70,6 +84,7 @@ class ProgramsViewModel @Inject constructor(
                 onComplete?.invoke()
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
+                logRecoverable("ProgramsViewModel", e)
                 _error.value = true
             }
         }
@@ -93,14 +108,34 @@ class ProgramsViewModel @Inject constructor(
 
     fun days(id: Long) = repository.observeDays(id)
         .map { DataState(it, loading = false) }
-        .catch { emit(DataState(emptyList(), loading = false, error = true)) }
+        .catch { e ->
+            if (e is CancellationException) throw e
+            logRecoverable("ProgramsViewModel", e)
+            emit(DataState(emptyList(), loading = false, error = true))
+        }
 
     fun exercises(dayId: Long) = repository.observeExercises(dayId)
         .map { DataState(it, loading = false) }
-        .catch { emit(DataState(emptyList(), loading = false, error = true)) }
+        .catch { e ->
+            if (e is CancellationException) throw e
+            logRecoverable("ProgramsViewModel", e)
+            emit(DataState(emptyList(), loading = false, error = true))
+        }
+
+    fun exercisesWithSets(dayId: Long) = repository.observeExercisesWithSets(dayId)
+        .map { DataState(it, loading = false) }
+        .catch { e ->
+            if (e is CancellationException) throw e
+            logRecoverable("ProgramsViewModel", e)
+            emit(DataState(emptyList(), loading = false, error = true))
+        }
 
     fun sets(exerciseId: Long) = repository.observeSets(exerciseId)
-        .catch { e -> if (e is CancellationException) throw e; emit(emptyList()) }
+        .catch { e ->
+            if (e is CancellationException) throw e
+            logRecoverable("ProgramsViewModel", e)
+            emit(emptyList())
+        }
 }
 
 @HiltViewModel
@@ -110,7 +145,11 @@ class ProfileViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
     val profile = observeProfile().map { DataState(it, loading = false) }
-        .catch { emit(DataState(null, loading = false, error = true)) }
+        .catch { e ->
+            if (e is CancellationException) throw e
+            logRecoverable("ProfileViewModel", e)
+            emit(DataState(null, loading = false, error = true))
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DataState<UserProfile?>(null, loading = true))
     private val _error = MutableStateFlow(false)
     val error = _error.asStateFlow()
@@ -118,6 +157,7 @@ class ProfileViewModel @Inject constructor(
     val saved = _saved.asStateFlow()
 
     fun clearSaved() { _saved.value = false }
+    fun clearError() { _error.value = false }
 
     fun save(profile: UserProfile) {
         viewModelScope.launch {
@@ -129,6 +169,7 @@ class ProfileViewModel @Inject constructor(
                 _saved.value = true
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
+                logRecoverable("ProfileViewModel", e)
                 _error.value = true
                 _saved.value = false
             }
@@ -147,10 +188,19 @@ class SettingsViewModel @Inject constructor(
     val error = _error.asStateFlow()
     private val _operationMessage = MutableStateFlow<Int?>(null)
     val operationMessage = _operationMessage.asStateFlow()
+    private val _pdfMessage = MutableStateFlow<Int?>(null)
+    val pdfMessage = _pdfMessage.asStateFlow()
     private val _pendingBackup = MutableStateFlow<PantherBackup?>(null)
     val pendingBackup = _pendingBackup.asStateFlow()
 
-    fun clearMessage() { _operationMessage.value = null }
+    fun clearMessage() {
+        _operationMessage.value = null
+        _error.value = false
+    }
+
+    fun clearPdfMessage() {
+        _pdfMessage.value = null
+    }
 
     fun setTheme(choice: ThemeChoice) {
         viewModelScope.launch {
@@ -159,7 +209,9 @@ class SettingsViewModel @Inject constructor(
                 _error.value = false
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
+                logRecoverable("SettingsViewModel", e)
                 _error.value = true
+                _operationMessage.value = R.string.error_generic
             }
         }
     }
@@ -168,9 +220,9 @@ class SettingsViewModel @Inject constructor(
         val snapshot = repository.createBackup()
         val json = withContext(Dispatchers.IO) { PantherBackupJson.encode(snapshot) }
         withContext(Dispatchers.IO) {
-            val output = context.contentResolver.openOutputStream(uri, "wt")
-                ?: throw IllegalArgumentException("Invalid export URI")
-            output.bufferedWriter(Charsets.UTF_8).use { it.write(json) }
+            SafeUriOutput.openTruncated(context.contentResolver, uri)
+                .bufferedWriter(Charsets.UTF_8)
+                .use { it.write(json) }
         }
     }
 
@@ -181,14 +233,14 @@ class SettingsViewModel @Inject constructor(
                     val input = context.contentResolver.openInputStream(uri)
                         ?: throw IllegalArgumentException("Invalid import URI")
                     val bytes = input.use { it.readLimited(PantherBackup.MAX_BACKUP_BYTES + 1) }
-                    require(bytes.size <= PantherBackup.MAX_BACKUP_BYTES) { "Backup too large" }
-                    PantherBackupJson.decode(bytes.toString(Charsets.UTF_8))
+                    PantherBackupJson.decode(bytes)
                 }
                 _pendingBackup.value = candidate
                 _error.value = false
                 _operationMessage.value = null
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
+                logRecoverable("SettingsViewModel", e)
                 _pendingBackup.value = null
                 _error.value = true
                 _operationMessage.value = R.string.backup_invalid
@@ -209,19 +261,28 @@ class SettingsViewModel @Inject constructor(
                 _operationMessage.value = R.string.backup_imported
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
+                logRecoverable("SettingsViewModel", e)
                 _error.value = true
                 _operationMessage.value = R.string.error_generic
             }
         }
     }
 
-    fun exportProgramPdf(programId: Long, uri: Uri) = runOperation(R.string.pdf_exported) {
-        val backup = repository.createBackup()
-        val program = backup.programs.firstOrNull { it.originalId == programId } ?: error("Program not found")
-        withContext(Dispatchers.IO) {
-            val output = context.contentResolver.openOutputStream(uri, "wt")
-                ?: throw IllegalArgumentException("Invalid export URI")
-            output.use { ProgramPdfExporter.write(context, program, it) }
+    fun exportProgramPdf(programId: Long, uri: Uri) {
+        viewModelScope.launch {
+            try {
+                val program = repository.createProgramBackup(programId) ?: error("Program not found")
+                withContext(Dispatchers.IO) {
+                    SafeUriOutput.openTruncated(context.contentResolver, uri).use { output ->
+                        ProgramPdfExporter.write(context, program, output)
+                    }
+                }
+                _pdfMessage.value = R.string.pdf_exported
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                logRecoverable("SettingsViewModel", e)
+                _pdfMessage.value = R.string.error_generic
+            }
         }
     }
 
@@ -233,6 +294,7 @@ class SettingsViewModel @Inject constructor(
                 _operationMessage.value = successMessage
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
+                logRecoverable("SettingsViewModel", e)
                 _error.value = true
                 _operationMessage.value = R.string.error_generic
             }

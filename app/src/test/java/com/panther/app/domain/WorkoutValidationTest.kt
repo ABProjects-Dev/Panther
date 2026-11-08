@@ -21,6 +21,20 @@ class WorkoutValidationTest {
     }
 
     @Test
+    fun setsValidationEnforcesNonEmptyAndUpperCapSymmetricallyWithBackup() {
+        assertFalse(WorkoutValidation.sets(emptyList()))
+        val atCap = (1..PantherBackup.MAX_SETS_PER_EXERCISE).map { num ->
+            ExerciseSet(exerciseId = 1, setNumber = num, targetType = TargetType.REPS, targetValue = 8)
+        }
+        assertTrue(WorkoutValidation.sets(atCap))
+
+        val aboveCap = (1..(PantherBackup.MAX_SETS_PER_EXERCISE + 1)).map { num ->
+            ExerciseSet(exerciseId = 1, setNumber = num, targetType = TargetType.REPS, targetValue = 8)
+        }
+        assertFalse(WorkoutValidation.sets(aboveCap))
+    }
+
+    @Test
     fun backupValidationEnforcesSingleActiveProgramAndValidSetTargets() {
         val now = 1_700_000_000_000L
         fun program(name: String, active: Boolean) = ProgramBackup(name, now, active, emptyList())

@@ -73,8 +73,17 @@ object PantherBackupJson {
         return root.toString(2)
     }
 
+    fun decode(bytes: ByteArray): PantherBackup {
+        require(bytes.size <= PantherBackup.MAX_BACKUP_BYTES) { "Backup file is too large" }
+        return decodeValidatedText(String(bytes, Charsets.UTF_8))
+    }
+
     fun decode(text: String): PantherBackup {
-        require(text.toByteArray(Charsets.UTF_8).size <= PantherBackup.MAX_BACKUP_BYTES) { "Backup file is too large" }
+        require(utf8ByteLength(text) <= PantherBackup.MAX_BACKUP_BYTES) { "Backup file is too large" }
+        return decodeValidatedText(text)
+    }
+
+    private fun decodeValidatedText(text: String): PantherBackup {
         val tokener = JSONTokener(text)
         val rootObj = tokener.nextValue()
         if (rootObj !is JSONObject) error("Invalid backup JSON")
@@ -143,6 +152,27 @@ object PantherBackupJson {
         return PantherBackup(version, profile, programs).also {
             require(WorkoutValidation.backup(it)) { "Backup contains invalid data" }
         }
+    }
+
+    /** Computes exact UTF-8 encoded byte length without allocating an intermediate [ByteArray]. */
+    internal fun utf8ByteLength(text: String): Long {
+        var bytes = 0L
+        var i = 0
+        val length = text.length
+        while (i < length) {
+            val ch = text[i]
+            when {
+                ch.code <= 0x7F -> bytes += 1L
+                ch.code <= 0x7FF -> bytes += 2L
+                Character.isHighSurrogate(ch) && i + 1 < length && Character.isLowSurrogate(text[i + 1]) -> {
+                    bytes += 4L
+                    i++
+                }
+                else -> bytes += 3L
+            }
+            i++
+        }
+        return bytes
     }
 
     private fun JSONObject.nullableInt(key: String): Int? = if (isNull(key)) null else getInt(key)

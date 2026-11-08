@@ -8,15 +8,27 @@ plugins {
     alias(libs.plugins.hilt)
 }
 
-// Release signing material is supplied at build time and is never committed.
-// The release workflow writes app/signing.properties and app/release.jks before assembling.
+// Release signing material is supplied at build time via environment variables in CI
+// (or an untracked local app/signing.properties fallback) and is never committed.
 val signingPropertiesFile = project.file("signing.properties")
 val signingProperties = Properties().apply {
     if (signingPropertiesFile.exists()) {
         signingPropertiesFile.inputStream().use { load(it) }
     }
 }
-val hasReleaseSigning = signingPropertiesFile.exists()
+val releaseStoreFilePath = System.getenv("RELEASE_STORE_FILE")?.takeIf { it.isNotBlank() }
+    ?: signingProperties.getProperty("storeFile")?.takeIf { it.isNotBlank() }
+val releaseStorePassword = System.getenv("RELEASE_STORE_PASSWORD")?.takeIf { it.isNotEmpty() }
+    ?: signingProperties.getProperty("storePassword")?.takeIf { it.isNotEmpty() }
+val releaseKeyAlias = System.getenv("RELEASE_KEY_ALIAS")?.takeIf { it.isNotBlank() }
+    ?: signingProperties.getProperty("keyAlias")?.takeIf { it.isNotBlank() }
+val releaseKeyPassword = System.getenv("RELEASE_KEY_PASSWORD")?.takeIf { it.isNotEmpty() }
+    ?: signingProperties.getProperty("keyPassword")?.takeIf { it.isNotEmpty() }
+val hasReleaseSigning = releaseStoreFilePath != null &&
+    project.file(releaseStoreFilePath).exists() &&
+    releaseStorePassword != null &&
+    releaseKeyAlias != null &&
+    releaseKeyPassword != null
 
 // Version information can be overridden from CI so that the tag drives the release metadata.
 val applicationVersionName = (findProperty("releaseVersionName") as String?) ?: "0.1.0"
@@ -35,13 +47,18 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    sourceSets {
+        // Expose Room exported schema JSONs to MigrationTestHelper in androidTest.
+        getByName("androidTest").assets.srcDir("$projectDir/schemas")
+    }
+
     signingConfigs {
         if (hasReleaseSigning) {
             create("release") {
-                storeFile = project.file(signingProperties.getProperty("storeFile") ?: "release.jks")
-                storePassword = signingProperties.getProperty("storePassword")
-                keyAlias = signingProperties.getProperty("keyAlias")
-                keyPassword = signingProperties.getProperty("keyPassword")
+                storeFile = project.file(checkNotNull(releaseStoreFilePath))
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
             }
         }
     }
@@ -88,6 +105,7 @@ dependencies {
     testImplementation(libs.junit)
     // org.json is part of the Android platform but absent from the JVM test classpath.
     testImplementation(libs.json)
+    testImplementation(libs.kotlinx.coroutines.test)
 
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.test.ext.junit)
