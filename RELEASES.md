@@ -3,36 +3,36 @@
 ## Official Releases (Rule 12)
 Releases are managed via GitHub Actions (`release.yml`) and tagged with Semantic Versioning (Rule 9) using Persian annotated tag descriptions (`AGENTS.md` Section 19.1).
 
-### v1.0.1
-- **Date**: 2026-11-07
-- **Tag**: `v1.0.1`
-- **Workflow Artifact**: `panther-official-release-v1.0.1`
-- **Release Asset**: `app-release.apk` (`1,799,505` bytes)
-- **Notes**: UI/UX overhaul with bundled Vazirmatn typography, Jalali dates, read-only active-program dashboard with BMI card, tabbed training days, drag-and-drop exercise ordering, and searchable duration picker.
-- **Signature**: Signed and verified in `release.yml` via GitHub Secrets (Rule 13).
-- **Status**: Created as a draft GitHub Release under the pre-PR-#33 workflow.
+### v1.1.0
+- **Date**: 2026-11-08
+- **Tag**: `v1.1.0` (annotated in Persian)
+- **Workflow Artifact**: `panther-official-release-v1.1.0`
+- **Release Assets**: `Panther V1.1.0.apk` (`1,788,609` bytes) and `Panther V1.1.0.apk.sha256` (`85` bytes)
+- **Notes**: Complete RTL UI/UX redesign with bundled Vazirmatn typography, Jalali calendar dates, read-only active-program Home dashboard with BMI calculation, reorderable tabbed training days, drag-and-drop exercise ordering with TalkBack actions, searchable duration picker, Room data/backup integrity hardening, SAF fallback, single-program PDF export refinements, and hardened CI/release automation.
+- **Signature**: Signed and verified with `apksigner` (APK Signature Scheme v2/v3) in `release.yml` via GitHub Secrets (Rule 13).
+- **Status**: Published directly on GitHub Releases (`draft: false`).
 
 ### v1.0.0
 - **Date**: 2026-11-07
 - **Tag**: `v1.0.0`
 - **Workflow Artifact**: `panther-official-release-v1.0.0`
-- **Release Asset**: `app-release.apk`
+- **Release Asset**: `app-release.apk` (`1,439,269` bytes)
 - **Notes**: First stable release with full CI/CD support.
 - **Signature**: Verified via GitHub Secrets (Rule 13).
 - **Status**: Published on GitHub Releases.
 
 ### Release history & current standard
 - `v1.0.0` is the first tagged release (`v0.1.0` was an untagged pre-release baseline).
-- Starting after `v1.0.1` (per `AGENTS.md` Section 19.1):
+- Starting with `v1.1.0` (per `AGENTS.md` Section 19.1):
   - Annotated release tags (`git tag -a vX.Y.Z`) carry **Persian** tag descriptions.
   - Signed release APKs follow the `[AppName] Vx.y.z` naming convention (`Panther Vx.y.z.apk` and `Panther Vx.y.z.apk.sha256`), verified with `apksigner` (APK Signature Scheme v2/v3).
-  - Once the owner initiates `tag` and selects the version, `release.yml` publishes the GitHub Release **directly** (`draft: false`).
+  - Once the owner approves the release tag, `release.yml` publishes the GitHub Release **directly** (`draft: false`).
 
 ## Release Policy (Rule 12 & Section 19.1)
-- Initiate releases only after the owner sends `tag` and explicitly selects the version.
+- Initiate releases only after explicit owner approval (`tag` workflow).
 - Use annotated Git tags on `main` with Persian descriptions.
-- Never reuse an existing release tag.
-- Preserve historical releases.
+- Never reuse an existing release tag without explicit owner instruction.
+- Preserve historical releases unless the owner explicitly orders removal.
 - Upload only verified `Panther Vx.y.z.apk` artifacts and `.sha256` checksums.
 - Never upload signing keys or passwords.
 
