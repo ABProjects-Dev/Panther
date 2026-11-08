@@ -6,6 +6,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -14,6 +15,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
@@ -26,6 +29,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +37,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
@@ -45,6 +53,20 @@ import com.panther.app.core.designsystem.theme.LocalPantherColors
 import com.panther.app.core.designsystem.theme.PantherSpacing
 import com.panther.app.core.format.PantherDateFormat
 import com.panther.app.domain.model.*
+import java.util.ArrayList
+import kotlinx.coroutines.delay
+
+private val StringListSaver: Saver<List<String>, ArrayList<String>> = Saver(
+    save = { ArrayList(it) },
+    restore = { it.toList() },
+)
+
+private fun formatSetTarget(set: ExerciseSet): String =
+    if (set.targetType == TargetType.REPS) {
+        (set.targetValue ?: 10).toString()
+    } else {
+        "${set.targetMinutes ?: 0}:${(set.targetSeconds ?: 30).toString().padStart(2, '0')}"
+    }
 
 @Composable
 fun ProgramEditorScreen(
@@ -54,13 +76,29 @@ fun ProgramEditorScreen(
     onBack: () -> Unit,
 ) {
     val programsState by viewModel.programs.collectAsStateWithLifecycle()
-    val daysState by viewModel.days(programId).collectAsStateWithLifecycle(initialValue = DataState(emptyList(), loading = true))
+    val daysFlow = remember(programId) { viewModel.days(programId) }
+    val daysState by daysFlow.collectAsStateWithLifecycle(initialValue = DataState(emptyList(), loading = true))
     val vmError by viewModel.error.collectAsStateWithLifecycle()
+    val pdfMessage by settings.pdfMessage.collectAsStateWithLifecycle()
     val program = programsState.value.firstOrNull { it.id == programId }
     val activeColors = LocalPantherColors.current
 
     val pdfLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
         if (uri != null) settings.exportProgramPdf(programId, uri)
+    }
+
+    LaunchedEffect(vmError) {
+        if (vmError) {
+            delay(4000)
+            viewModel.clearError()
+        }
+    }
+
+    LaunchedEffect(pdfMessage) {
+        if (pdfMessage != null) {
+            delay(3500)
+            settings.clearPdfMessage()
+        }
     }
 
     var showRenameProgramDialog by rememberSaveable { mutableStateOf(false) }
@@ -71,6 +109,7 @@ fun ProgramEditorScreen(
     var newDayName by rememberSaveable { mutableStateOf("") }
 
     val daysList = daysState.value
+    val canAddDay = daysList.size < PantherBackup.MAX_DAYS_PER_PROGRAM
     var selectedDayId by rememberSaveable(programId) { mutableStateOf<Long?>(null) }
     var previousDayCount by rememberSaveable(programId) { mutableIntStateOf(0) }
 
@@ -145,6 +184,7 @@ fun ProgramEditorScreen(
             return@Column
         }
 
+        val toggleDesc = stringResource(R.string.toggle_program_active, program.name)
         PantherCard(
             containerColor = if (program.isActive) activeColors.activeGreenContainer else MaterialTheme.colorScheme.surface,
             border = if (program.isActive) {
@@ -198,6 +238,7 @@ fun ProgramEditorScreen(
                 Switch(
                     checked = program.isActive,
                     onCheckedChange = { active -> viewModel.setActive(program.id, active) },
+                    modifier = Modifier.semantics { contentDescription = toggleDesc },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = activeColors.onActiveGreen,
                         checkedTrackColor = activeColors.activeGreen,
@@ -205,6 +246,18 @@ fun ProgramEditorScreen(
                     ),
                 )
             }
+        }
+
+        pdfMessage?.let { msg ->
+            Text(
+                text = stringResource(msg),
+                style = MaterialTheme.typography.bodySmall,
+                color = if (msg == R.string.error_generic) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    activeColors.activeGreen
+                },
+            )
         }
 
         if (daysState.error || vmError) {
@@ -226,12 +279,21 @@ fun ProgramEditorScreen(
                     newDayName = ""
                     showAddDayDialog = true
                 },
+                enabled = canAddDay,
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
             ) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(4.dp))
                 Text(stringResource(R.string.add_day))
             }
+        }
+
+        if (!canAddDay) {
+            Text(
+                text = stringResource(R.string.limit_days_reached),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
 
         if (daysState.loading) {
@@ -283,6 +345,27 @@ fun ProgramEditorScreen(
                 TrainingDayDedicatedPage(
                     day = currentDay,
                     isProgramActive = program.isActive,
+                    showDayReorder = daysList.size > 1,
+                    canMoveDayEarlier = selectedTabIndex > 0,
+                    canMoveDayLater = selectedTabIndex < daysList.lastIndex,
+                    onMoveDayEarlier = {
+                        if (selectedTabIndex > 0) {
+                            val reordered = daysList.map { it.id }.toMutableList().apply {
+                                val moved = removeAt(selectedTabIndex)
+                                add(selectedTabIndex - 1, moved)
+                            }
+                            viewModel.reorderDays(programId, reordered)
+                        }
+                    },
+                    onMoveDayLater = {
+                        if (selectedTabIndex < daysList.lastIndex) {
+                            val reordered = daysList.map { it.id }.toMutableList().apply {
+                                val moved = removeAt(selectedTabIndex)
+                                add(selectedTabIndex + 1, moved)
+                            }
+                            viewModel.reorderDays(programId, reordered)
+                        }
+                    },
                     viewModel = viewModel,
                     modifier = Modifier.weight(1f),
                 )
@@ -291,7 +374,7 @@ fun ProgramEditorScreen(
     }
 
     if (showRenameProgramDialog && program != null) {
-        var invalid by remember { mutableStateOf(false) }
+        var invalid by rememberSaveable { mutableStateOf(false) }
         AlertDialog(
             onDismissRequest = { showRenameProgramDialog = false },
             title = { Text(stringResource(R.string.edit_program)) },
@@ -360,7 +443,7 @@ fun ProgramEditorScreen(
     }
 
     if (showAddDayDialog) {
-        var invalid by remember { mutableStateOf(false) }
+        var invalid by rememberSaveable { mutableStateOf(false) }
         AlertDialog(
             onDismissRequest = { showAddDayDialog = false },
             title = { Text(stringResource(R.string.add_day)) },
@@ -409,13 +492,20 @@ fun ProgramEditorScreen(
 private fun TrainingDayDedicatedPage(
     day: TrainingDay,
     isProgramActive: Boolean,
+    showDayReorder: Boolean,
+    canMoveDayEarlier: Boolean,
+    canMoveDayLater: Boolean,
+    onMoveDayEarlier: () -> Unit,
+    onMoveDayLater: () -> Unit,
     viewModel: ProgramsViewModel,
     modifier: Modifier = Modifier,
 ) {
-    val exercisesState by viewModel.exercises(day.id).collectAsStateWithLifecycle(initialValue = DataState(emptyList(), loading = true))
-    val orderedExercises = remember(day.id) { mutableStateListOf<Exercise>() }
+    val exercisesFlow = remember(day.id) { viewModel.exercisesWithSets(day.id) }
+    val exercisesState by exercisesFlow.collectAsStateWithLifecycle(initialValue = DataState(emptyList(), loading = true))
+    val orderedExercises = remember(day.id) { mutableStateListOf<ExerciseWithSets>() }
     var draggedExerciseId by remember(day.id) { mutableStateOf<Long?>(null) }
     var dragOffsetY by remember(day.id) { mutableFloatStateOf(0f) }
+    var dragAutoScrollSpeed by remember(day.id) { mutableFloatStateOf(0f) }
     val listState = rememberLazyListState()
 
     LaunchedEffect(day.id, exercisesState.value) {
@@ -430,23 +520,42 @@ private fun TrainingDayDedicatedPage(
     var deleteDayDialog by rememberSaveable(day.id) { mutableStateOf(false) }
 
     var showExerciseEditor by rememberSaveable(day.id) { mutableStateOf(false) }
-    var currentExercise by remember(day.id) { mutableStateOf<Exercise?>(null) }
-    var exerciseToDelete by remember(day.id) { mutableStateOf<Exercise?>(null) }
-    var exerciseInvalid by remember(day.id) { mutableStateOf(false) }
+    var editingExerciseId by rememberSaveable(day.id) { mutableStateOf<Long?>(null) }
+    var exerciseToDeleteId by rememberSaveable(day.id) { mutableStateOf<Long?>(null) }
+    var exerciseInvalid by rememberSaveable(day.id) { mutableStateOf(false) }
+
+    val currentExerciseItem = editingExerciseId?.let { targetId ->
+        orderedExercises.firstOrNull { it.exercise.id == targetId }
+            ?: exercisesState.value.firstOrNull { it.exercise.id == targetId }
+    }
+    val exerciseToDelete = exerciseToDeleteId?.let { targetId ->
+        orderedExercises.firstOrNull { it.exercise.id == targetId }?.exercise
+            ?: exercisesState.value.firstOrNull { it.exercise.id == targetId }?.exercise
+    }
+    val canAddExercise = orderedExercises.size < PantherBackup.MAX_EXERCISES_PER_DAY
 
     fun handleDragStart(exerciseId: Long) {
         draggedExerciseId = exerciseId
         dragOffsetY = 0f
+        dragAutoScrollSpeed = 0f
     }
 
     fun handleDragStep(deltaY: Float) {
         val activeId = draggedExerciseId ?: return
         dragOffsetY += deltaY
-        val currentIndex = orderedExercises.indexOfFirst { it.id == activeId }
+        val currentIndex = orderedExercises.indexOfFirst { it.exercise.id == activeId }
         if (currentIndex == -1) return
-        val visibleItems = listState.layoutInfo.visibleItemsInfo
+        val layoutInfo = listState.layoutInfo
+        val visibleItems = layoutInfo.visibleItemsInfo
         val currentItemInfo = visibleItems.firstOrNull { it.index == currentIndex } ?: return
         val currentCenterY = currentItemInfo.offset + dragOffsetY + (currentItemInfo.size / 2f)
+
+        val edgeThresholdPx = 110f
+        dragAutoScrollSpeed = when {
+            currentCenterY < layoutInfo.viewportStartOffset + edgeThresholdPx && listState.canScrollBackward -> -14f
+            currentCenterY > layoutInfo.viewportEndOffset - edgeThresholdPx && listState.canScrollForward -> 14f
+            else -> 0f
+        }
 
         if (dragOffsetY > 0f && currentIndex < orderedExercises.lastIndex) {
             val nextItemInfo = visibleItems.firstOrNull { it.index == currentIndex + 1 }
@@ -470,13 +579,26 @@ private fun TrainingDayDedicatedPage(
         if (draggedExerciseId == null) return
         draggedExerciseId = null
         dragOffsetY = 0f
-        val newIds = orderedExercises.map { it.id }
-        val persistedIds = exercisesState.value.map { it.id }
+        dragAutoScrollSpeed = 0f
+        val newIds = orderedExercises.map { it.exercise.id }
+        val persistedIds = exercisesState.value.map { it.exercise.id }
         if (newIds.size == persistedIds.size && newIds.toSet() == persistedIds.toSet() && newIds != persistedIds) {
             viewModel.reorderExercises(day.id, newIds)
         } else if (newIds.toSet() != persistedIds.toSet()) {
             orderedExercises.clear()
             orderedExercises.addAll(exercisesState.value)
+        }
+    }
+
+    LaunchedEffect(draggedExerciseId, dragAutoScrollSpeed) {
+        while (draggedExerciseId != null && dragAutoScrollSpeed != 0f) {
+            val consumed = listState.scrollBy(dragAutoScrollSpeed)
+            if (consumed == 0f) {
+                dragAutoScrollSpeed = 0f
+                break
+            }
+            handleDragStep(0f)
+            withFrameNanos { }
         }
     }
 
@@ -489,24 +611,42 @@ private fun TrainingDayDedicatedPage(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            Button(
+                onClick = {
+                    editingExerciseId = null
+                    exerciseInvalid = false
+                    showExerciseEditor = true
+                },
+                enabled = canAddExercise,
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
             ) {
-                Button(
-                    onClick = {
-                        currentExercise = null
-                        exerciseInvalid = false
-                        showExerciseEditor = true
-                    },
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text(stringResource(R.string.add_exercise), fontWeight = FontWeight.SemiBold)
-                }
+                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(4.dp))
+                Text(stringResource(R.string.add_exercise), fontWeight = FontWeight.SemiBold)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
+                if (showDayReorder) {
+                    IconButton(
+                        onClick = onMoveDayEarlier,
+                        enabled = canMoveDayEarlier,
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                            contentDescription = stringResource(R.string.move_day_earlier),
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                    IconButton(
+                        onClick = onMoveDayLater,
+                        enabled = canMoveDayLater,
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = stringResource(R.string.move_day_later),
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                }
                 TextButton(
                     onClick = {
                         editDayName = day.name
@@ -524,7 +664,13 @@ private fun TrainingDayDedicatedPage(
             }
         }
 
-        if (orderedExercises.size > 1) {
+        if (!canAddExercise) {
+            Text(
+                text = stringResource(R.string.limit_exercises_reached),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else if (orderedExercises.size > 1) {
             Text(
                 text = stringResource(R.string.drag_hint),
                 style = MaterialTheme.typography.labelSmall,
@@ -548,23 +694,43 @@ private fun TrainingDayDedicatedPage(
                 contentPadding = PaddingValues(bottom = PantherSpacing.large),
                 verticalArrangement = Arrangement.spacedBy(PantherSpacing.small),
             ) {
-                itemsIndexed(orderedExercises, key = { _, ex -> ex.id }) { _, exercise ->
+                itemsIndexed(orderedExercises, key = { _, item -> item.exercise.id }) { index, item ->
+                    val exercise = item.exercise
                     val isDragging = draggedExerciseId == exercise.id
                     DraggableExerciseCard(
-                        exercise = exercise,
+                        item = item,
                         isDragging = isDragging,
                         dragOffsetY = if (isDragging) dragOffsetY else 0f,
                         highlightGreen = isProgramActive,
-                        viewModel = viewModel,
+                        canMoveUp = index > 0,
+                        canMoveDown = index < orderedExercises.lastIndex,
+                        onMoveUp = {
+                            if (index > 0) {
+                                val reordered = orderedExercises.map { it.exercise.id }.toMutableList().apply {
+                                    val moved = removeAt(index)
+                                    add(index - 1, moved)
+                                }
+                                viewModel.reorderExercises(day.id, reordered)
+                            }
+                        },
+                        onMoveDown = {
+                            if (index < orderedExercises.lastIndex) {
+                                val reordered = orderedExercises.map { it.exercise.id }.toMutableList().apply {
+                                    val moved = removeAt(index)
+                                    add(index + 1, moved)
+                                }
+                                viewModel.reorderExercises(day.id, reordered)
+                            }
+                        },
                         onDragStart = { handleDragStart(exercise.id) },
                         onDrag = { delta -> handleDragStep(delta) },
                         onDragEnd = { handleDragFinish() },
                         onEdit = {
-                            currentExercise = exercise
+                            editingExerciseId = exercise.id
                             exerciseInvalid = false
                             showExerciseEditor = true
                         },
-                        onDelete = { exerciseToDelete = exercise },
+                        onDelete = { exerciseToDeleteId = exercise.id },
                     )
                 }
             }
@@ -572,7 +738,7 @@ private fun TrainingDayDedicatedPage(
     }
 
     if (renameDayDialog) {
-        var invalid by remember { mutableStateOf(false) }
+        var invalid by rememberSaveable { mutableStateOf(false) }
         AlertDialog(
             onDismissRequest = { renameDayDialog = false },
             title = { Text(stringResource(R.string.edit_day)) },
@@ -642,14 +808,14 @@ private fun TrainingDayDedicatedPage(
 
     if (exerciseToDelete != null) {
         AlertDialog(
-            onDismissRequest = { exerciseToDelete = null },
+            onDismissRequest = { exerciseToDeleteId = null },
             title = { Text(stringResource(R.string.delete)) },
             text = { Text(stringResource(R.string.confirm_delete_exercise)) },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        exerciseToDelete?.let { viewModel.deleteExercise(it.id) }
-                        exerciseToDelete = null
+                        exerciseToDeleteId?.let { viewModel.deleteExercise(it) }
+                        exerciseToDeleteId = null
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
                 ) {
@@ -657,7 +823,7 @@ private fun TrainingDayDedicatedPage(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { exerciseToDelete = null }) {
+                TextButton(onClick = { exerciseToDeleteId = null }) {
                     Text(stringResource(R.string.cancel))
                 }
             },
@@ -666,17 +832,23 @@ private fun TrainingDayDedicatedPage(
 
     if (showExerciseEditor) {
         ExerciseDialog(
-            initial = currentExercise,
-            exerciseFlow = currentExercise?.let { viewModel.sets(it.id) },
+            editingExerciseId = editingExerciseId,
+            initialItem = currentExerciseItem,
             invalid = exerciseInvalid,
             onInvalid = { exerciseInvalid = it },
-            onDismiss = { showExerciseEditor = false },
-            onSave = { name, sets ->
-                val targetOrder = currentExercise?.let { existing ->
-                    orderedExercises.indexOfFirst { it.id == existing.id }.takeIf { it >= 0 } ?: existing.sortOrder
-                } ?: orderedExercises.size
-                viewModel.saveExercise(day.id, currentExercise?.id, name, targetOrder, sets)
+            onDismiss = {
                 showExerciseEditor = false
+                editingExerciseId = null
+            },
+            onSave = { name, sets ->
+                val targetOrder = editingExerciseId?.let { targetId ->
+                    orderedExercises.indexOfFirst { it.exercise.id == targetId }.takeIf { it >= 0 }
+                        ?: currentExerciseItem?.exercise?.sortOrder
+                        ?: 0
+                } ?: orderedExercises.size
+                viewModel.saveExercise(day.id, editingExerciseId, name, targetOrder, sets)
+                showExerciseEditor = false
+                editingExerciseId = null
             },
         )
     }
@@ -684,21 +856,28 @@ private fun TrainingDayDedicatedPage(
 
 @Composable
 private fun DraggableExerciseCard(
-    exercise: Exercise,
+    item: ExerciseWithSets,
     isDragging: Boolean,
     dragOffsetY: Float,
     highlightGreen: Boolean,
-    viewModel: ProgramsViewModel,
+    canMoveUp: Boolean,
+    canMoveDown: Boolean,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
     onDragStart: () -> Unit,
     onDrag: (Float) -> Unit,
     onDragEnd: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    val sets by viewModel.sets(exercise.id).collectAsStateWithLifecycle(initialValue = emptyList())
+    val exercise = item.exercise
+    val sets = item.sets
     val currentOnDragStart by rememberUpdatedState(onDragStart)
     val currentOnDrag by rememberUpdatedState(onDrag)
     val currentOnDragEnd by rememberUpdatedState(onDragEnd)
+    val moveUpLabel = stringResource(R.string.move_exercise_up)
+    val moveDownLabel = stringResource(R.string.move_exercise_down)
+    val dragHandleLabel = stringResource(R.string.drag_handle_desc, exercise.name)
 
     val borderColor = when {
         isDragging -> MaterialTheme.colorScheme.primary
@@ -715,6 +894,17 @@ private fun DraggableExerciseCard(
                 scaleX = if (isDragging) 1.02f else 1f
                 scaleY = if (isDragging) 1.02f else 1f
                 shadowElevation = if (isDragging) 16f else 0f
+            }
+            .semantics {
+                val actions = buildList {
+                    if (canMoveUp) {
+                        add(CustomAccessibilityAction(label = moveUpLabel) { onMoveUp(); true })
+                    }
+                    if (canMoveDown) {
+                        add(CustomAccessibilityAction(label = moveDownLabel) { onMoveDown(); true })
+                    }
+                }
+                if (actions.isNotEmpty()) customActions = actions
             }
             .pointerInput(exercise.id) {
                 detectDragGesturesAfterLongPress(
@@ -748,7 +938,7 @@ private fun DraggableExerciseCard(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(48.dp)
                             .pointerInput(exercise.id) {
                                 detectDragGestures(
                                     onDragStart = { currentOnDragStart() },
@@ -764,7 +954,7 @@ private fun DraggableExerciseCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Menu,
-                            contentDescription = null,
+                            contentDescription = dragHandleLabel,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(20.dp),
                         )
@@ -805,51 +995,45 @@ private fun DraggableExerciseCard(
 
 @Composable
 private fun ExerciseDialog(
-    initial: Exercise?,
-    exerciseFlow: kotlinx.coroutines.flow.Flow<List<ExerciseSet>>?,
+    editingExerciseId: Long?,
+    initialItem: ExerciseWithSets?,
     invalid: Boolean,
     onInvalid: (Boolean) -> Unit,
     onDismiss: () -> Unit,
     onSave: (String, List<ExerciseSet>) -> Unit,
 ) {
-    val initialSets by (exerciseFlow ?: remember { kotlinx.coroutines.flow.flowOf(emptyList()) })
-        .collectAsStateWithLifecycle(initialValue = emptyList())
-    var name by rememberSaveable(initial?.id) { mutableStateOf(initial?.name.orEmpty()) }
-    var targetType by rememberSaveable(initial?.id) {
-        mutableStateOf(initialSets.firstOrNull()?.targetType ?: TargetType.REPS)
+    var name by rememberSaveable(editingExerciseId) { mutableStateOf(initialItem?.exercise?.name.orEmpty()) }
+    var targetType by rememberSaveable(editingExerciseId) {
+        mutableStateOf(initialItem?.sets?.firstOrNull()?.targetType ?: TargetType.REPS)
     }
-    var targetStrings by rememberSaveable(initial?.id) {
+    var targetStrings by rememberSaveable(editingExerciseId, stateSaver = StringListSaver) {
         mutableStateOf(
-            initialSets.map {
-                if (it.targetType == TargetType.REPS) {
-                    it.targetValue.toString()
-                } else {
-                    "${it.targetMinutes}:${it.targetSeconds.toString().padStart(2, '0')}"
-                }
-            }.ifEmpty { listOf("10", "10", "10") },
+            initialItem?.sets?.map(::formatSetTarget)?.ifEmpty { null } ?: listOf("10", "10", "10"),
         )
     }
-    var initializedFromDb by rememberSaveable(initial?.id) { mutableStateOf(initial == null) }
-    var openDropdownSetIndex by remember { mutableStateOf<Int?>(null) }
+    var initializedFromDb by rememberSaveable(editingExerciseId) {
+        mutableStateOf(editingExerciseId == null || initialItem != null)
+    }
+    var openDropdownSetIndex by rememberSaveable(editingExerciseId) { mutableStateOf<Int?>(null) }
 
-    LaunchedEffect(initialSets) {
-        if (!initializedFromDb && initialSets.isNotEmpty()) {
-            targetType = initialSets.first().targetType
-            targetStrings = initialSets.map {
-                if (it.targetType == TargetType.REPS) {
-                    it.targetValue.toString()
-                } else {
-                    "${it.targetMinutes}:${it.targetSeconds.toString().padStart(2, '0')}"
-                }
+    LaunchedEffect(editingExerciseId, initialItem) {
+        if (!initializedFromDb && editingExerciseId != null && initialItem != null) {
+            name = initialItem.exercise.name
+            if (initialItem.sets.isNotEmpty()) {
+                targetType = initialItem.sets.first().targetType
+                targetStrings = initialItem.sets.map(::formatSetTarget)
             }
             initializedFromDb = true
         }
     }
 
+    val decreaseSetsDesc = stringResource(R.string.decrease_sets)
+    val increaseSetsDesc = stringResource(R.string.increase_sets)
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(stringResource(if (initial == null) R.string.add_exercise else R.string.edit_exercise))
+            Text(stringResource(if (editingExerciseId == null) R.string.add_exercise else R.string.edit_exercise))
         },
         text = {
             Column(
@@ -903,6 +1087,7 @@ private fun ExerciseDialog(
                             }
                         },
                         enabled = targetStrings.size > 1,
+                        modifier = Modifier.semantics { contentDescription = decreaseSetsDesc },
                     ) {
                         Text("−")
                     }
@@ -917,6 +1102,7 @@ private fun ExerciseDialog(
                             }
                         },
                         enabled = targetStrings.size < PantherBackup.MAX_SETS_PER_EXERCISE,
+                        modifier = Modifier.semantics { contentDescription = increaseSetsDesc },
                     ) {
                         Text("+")
                     }
@@ -965,11 +1151,12 @@ private fun ExerciseDialog(
         confirmButton = {
             TextButton(
                 onClick = {
+                    val targetExerciseId = editingExerciseId ?: 0L
                     val sets = targetStrings.mapIndexedNotNull { index, raw ->
                         if (targetType == TargetType.REPS) {
                             PantherDateFormat.asciiDigits(raw).trim().toIntOrNull()?.let { reps ->
                                 ExerciseSet(
-                                    exerciseId = initial?.id ?: 0L,
+                                    exerciseId = targetExerciseId,
                                     setNumber = index + 1,
                                     targetType = targetType,
                                     targetValue = reps,
@@ -978,7 +1165,7 @@ private fun ExerciseDialog(
                         } else {
                             DurationCatalog.parse(raw)?.let { option ->
                                 ExerciseSet(
-                                    exerciseId = initial?.id ?: 0L,
+                                    exerciseId = targetExerciseId,
                                     setNumber = index + 1,
                                     targetType = targetType,
                                     targetMinutes = option.minutes,
@@ -1105,7 +1292,11 @@ private fun DurationSearchablePickerDialog(
                     trailingIcon = if (searchQuery.isNotEmpty()) {
                         {
                             IconButton(onClick = { searchQuery = "" }) {
-                                Icon(Icons.Default.Clear, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = stringResource(R.string.clear_search),
+                                    modifier = Modifier.size(18.dp),
+                                )
                             }
                         }
                     } else {

@@ -2,6 +2,7 @@ package com.panther.app.feature
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -44,6 +45,13 @@ fun ProfileScreen(viewModel: ProfileViewModel, onSettings: () -> Unit) {
         if (saved) {
             delay(2500)
             viewModel.clearSaved()
+        }
+    }
+
+    LaunchedEffect(error) {
+        if (error) {
+            delay(4000)
+            viewModel.clearError()
         }
     }
 
@@ -168,18 +176,22 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val error by viewModel.error.collectAsStateWithLifecycle()
     val pendingBackup by viewModel.pendingBackup.collectAsStateWithLifecycle()
     val operationMessage by viewModel.operationMessage.collectAsStateWithLifecycle()
+    val displayedMessage = operationMessage ?: R.string.error_generic.takeIf { error }
+
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         if (uri != null) viewModel.exportBackup(uri)
     }
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) viewModel.validateImport(uri)
     }
-    LaunchedEffect(operationMessage) {
-        if (operationMessage != null) {
+
+    LaunchedEffect(displayedMessage) {
+        if (displayedMessage != null) {
             delay(3500)
             viewModel.clearMessage()
         }
     }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -197,7 +209,12 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
             Text(stringResource(R.string.theme), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(PantherSpacing.small))
             ThemeChoice.entries.forEach { choice ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { viewModel.setTheme(choice) },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     RadioButton(selected = selected == choice, onClick = { viewModel.setTheme(choice) })
                     Text(
                         stringResource(
@@ -232,11 +249,7 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
             ) {
                 Text(stringResource(R.string.import_backup))
             }
-            if (error) {
-                Spacer(Modifier.height(PantherSpacing.small))
-                Text(stringResource(R.string.error_generic), color = MaterialTheme.colorScheme.error)
-            }
-            operationMessage?.let { msg ->
+            displayedMessage?.let { msg ->
                 Spacer(Modifier.height(PantherSpacing.small))
                 Text(
                     text = stringResource(msg),

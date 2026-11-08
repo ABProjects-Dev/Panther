@@ -1,9 +1,6 @@
 <resources>
     <style name="Theme.Panther" parent="android:style/Theme.Material.NoActionBar">
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="android:statusBarColor">#101820</item>
-        <item name="android:navigationBarColor">#101820</item>
-        <item name="android:windowBackground">#101820</item>
+        <item name="android:windowBackground">#0B0D10</item>
         <item name="android:fontFamily">@font/vazirmatn</item>
     </style>
 </resources>

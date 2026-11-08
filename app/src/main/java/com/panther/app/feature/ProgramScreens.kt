@@ -17,6 +17,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -27,6 +29,7 @@ import com.panther.app.core.designsystem.theme.LocalPantherColors
 import com.panther.app.core.designsystem.theme.PantherSpacing
 import com.panther.app.core.format.PantherDateFormat
 import com.panther.app.domain.model.*
+import kotlinx.coroutines.delay
 
 @Composable
 private fun ErrorNotice(error: Boolean) {
@@ -174,7 +177,8 @@ private fun ReadOnlyActiveProgramSection(
     viewModel: ProgramsViewModel,
 ) {
     val activeColors = LocalPantherColors.current
-    val daysState by viewModel.days(program.id).collectAsStateWithLifecycle(initialValue = DataState(emptyList(), loading = true))
+    val daysFlow = remember(program.id) { viewModel.days(program.id) }
+    val daysState by daysFlow.collectAsStateWithLifecycle(initialValue = DataState(emptyList(), loading = true))
     val daysList = daysState.value
     var selectedDayId by rememberSaveable(program.id) { mutableStateOf<Long?>(null) }
     val selectedIndex = remember(daysList, selectedDayId) {
@@ -274,7 +278,8 @@ private fun ReadOnlyActiveProgramSection(
 
 @Composable
 private fun ReadOnlyTrainingDayExercises(day: TrainingDay, viewModel: ProgramsViewModel) {
-    val exercisesState by viewModel.exercises(day.id).collectAsStateWithLifecycle(initialValue = DataState(emptyList(), loading = true))
+    val exercisesFlow = remember(day.id) { viewModel.exercisesWithSets(day.id) }
+    val exercisesState by exercisesFlow.collectAsStateWithLifecycle(initialValue = DataState(emptyList(), loading = true))
     if (exercisesState.loading) {
         Text(stringResource(R.string.loading), style = MaterialTheme.typography.bodySmall)
     } else if (exercisesState.value.isEmpty()) {
@@ -285,9 +290,9 @@ private fun ReadOnlyTrainingDayExercises(day: TrainingDay, viewModel: ProgramsVi
         )
     } else {
         Column(verticalArrangement = Arrangement.spacedBy(PantherSpacing.small)) {
-            exercisesState.value.forEach { exercise ->
-                key(exercise.id) {
-                    ReadOnlyExerciseItem(exercise = exercise, viewModel = viewModel)
+            exercisesState.value.forEach { item ->
+                key(item.exercise.id) {
+                    ReadOnlyExerciseItem(item = item)
                 }
             }
         }
@@ -295,8 +300,7 @@ private fun ReadOnlyTrainingDayExercises(day: TrainingDay, viewModel: ProgramsVi
 }
 
 @Composable
-private fun ReadOnlyExerciseItem(exercise: Exercise, viewModel: ProgramsViewModel) {
-    val sets by viewModel.sets(exercise.id).collectAsStateWithLifecycle(initialValue = emptyList())
+private fun ReadOnlyExerciseItem(item: ExerciseWithSets) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.small,
@@ -310,12 +314,12 @@ private fun ReadOnlyExerciseItem(exercise: Exercise, viewModel: ProgramsViewMode
             verticalArrangement = Arrangement.spacedBy(PantherSpacing.small),
         ) {
             Text(
-                text = exercise.name,
+                text = item.exercise.name,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
-            if (sets.isNotEmpty()) {
-                ExerciseSetsSquares(sets = sets, highlightGreen = true)
+            if (item.sets.isNotEmpty()) {
+                ExerciseSetsSquares(sets = item.sets, highlightGreen = true)
             }
         }
     }
@@ -330,9 +334,17 @@ fun ProgramsScreen(
     val error by viewModel.error.collectAsStateWithLifecycle()
     var showCreateDialog by rememberSaveable { mutableStateOf(false) }
     var newProgramName by rememberSaveable { mutableStateOf("") }
+    val canCreateProgram = state.value.size < PantherBackup.MAX_PROGRAMS
+
+    LaunchedEffect(error) {
+        if (error) {
+            delay(4000)
+            viewModel.clearError()
+        }
+    }
 
     if (showCreateDialog) {
-        var invalid by remember { mutableStateOf(false) }
+        var invalid by rememberSaveable { mutableStateOf(false) }
         AlertDialog(
             onDismissRequest = { showCreateDialog = false },
             title = { Text(stringResource(R.string.new_program)) },
@@ -397,6 +409,15 @@ fun ProgramsScreen(
             if (state.error || error) {
                 item { ErrorNotice(true) }
             }
+            if (!canCreateProgram) {
+                item {
+                    Text(
+                        text = stringResource(R.string.limit_programs_reached),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
             if (!state.loading && !state.error && state.value.isEmpty()) {
                 item {
                     PantherCard {
@@ -416,19 +437,21 @@ fun ProgramsScreen(
             }
         }
 
-        ExtendedFloatingActionButton(
-            onClick = {
-                newProgramName = ""
-                showCreateDialog = true
-            },
-            modifier = Modifier
-                .align(AbsoluteAlignment.BottomLeft)
-                .padding(PantherSpacing.medium),
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
-            icon = { Icon(Icons.Default.Add, contentDescription = null) },
-            text = { Text(stringResource(R.string.new_program), fontWeight = FontWeight.SemiBold) },
-        )
+        if (canCreateProgram) {
+            ExtendedFloatingActionButton(
+                onClick = {
+                    newProgramName = ""
+                    showCreateDialog = true
+                },
+                modifier = Modifier
+                    .align(AbsoluteAlignment.BottomLeft)
+                    .padding(PantherSpacing.medium),
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                text = { Text(stringResource(R.string.new_program), fontWeight = FontWeight.SemiBold) },
+            )
+        }
     }
 }
 
@@ -439,6 +462,7 @@ private fun CompactProgramCard(
     onToggleActive: (Boolean) -> Unit,
 ) {
     val activeColors = LocalPantherColors.current
+    val toggleLabel = stringResource(R.string.toggle_program_active, program.name)
     val containerColor = if (program.isActive) {
         activeColors.activeGreenContainer
     } else {
@@ -504,6 +528,7 @@ private fun CompactProgramCard(
             Switch(
                 checked = program.isActive,
                 onCheckedChange = onToggleActive,
+                modifier = Modifier.semantics { contentDescription = toggleLabel },
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = activeColors.onActiveGreen,
                     checkedTrackColor = activeColors.activeGreen,

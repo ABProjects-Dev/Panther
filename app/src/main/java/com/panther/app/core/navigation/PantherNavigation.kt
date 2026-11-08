@@ -54,16 +54,21 @@ fun PantherNavigation(
         bottomBar = {
             NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                 destinations.forEach { destination ->
-                    val isSelected = route == destination.route ||
+                    val isRootRoute = route == destination.route
+                    val isSelected = isRootRoute ||
                         (destination.route == "programs" && route == "editor/{id}") ||
                         (destination.route == "profile" && route == "settings")
                     NavigationBarItem(
                         selected = isSelected,
                         onClick = {
-                            navController.navigate(destination.route) {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
+                            if (isSelected && !isRootRoute) {
+                                navController.popBackStack(destination.route, inclusive = false)
+                            } else if (!isRootRoute) {
+                                navController.navigate(destination.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             }
                         },
                         icon = { Icon(destination.icon, contentDescription = null) },
