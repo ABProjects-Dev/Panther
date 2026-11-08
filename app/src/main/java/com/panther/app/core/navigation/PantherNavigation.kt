@@ -61,9 +61,14 @@ fun PantherNavigation(
                     NavigationBarItem(
                         selected = isSelected,
                         onClick = {
-                            if (isSelected && !isRootRoute) {
+                            val currentRoute = navController.currentBackStackEntry?.destination?.route
+                            val currentlyRoot = currentRoute == destination.route
+                            val currentlySelected = currentlyRoot ||
+                                (destination.route == "programs" && currentRoute == "editor/{id}") ||
+                                (destination.route == "profile" && currentRoute == "settings")
+                            if (currentlySelected && !currentlyRoot) {
                                 navController.popBackStack(destination.route, inclusive = false)
-                            } else if (!isRootRoute) {
+                            } else if (!currentlyRoot) {
                                 navController.navigate(destination.route) {
                                     popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                     launchSingleTop = true

@@ -448,9 +448,11 @@ fun ProgramsScreen(
                     .padding(PantherSpacing.medium),
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text(stringResource(R.string.new_program), fontWeight = FontWeight.SemiBold) },
-            )
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(Modifier.width(PantherSpacing.small))
+                Text(stringResource(R.string.new_program), fontWeight = FontWeight.SemiBold)
+            }
         }
     }
 }
