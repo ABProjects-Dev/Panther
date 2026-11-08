@@ -27,7 +27,7 @@ class MainActivityTest {
         val newProgram = composeRule.activity.getString(R.string.new_program)
         val profileTab = composeRule.activity.getString(R.string.profile)
         val settingsLabel = composeRule.activity.getString(R.string.settings)
-        val backupSection = composeRule.activity.getString(R.string.backup_section)
+        val themeSection = composeRule.activity.getString(R.string.theme)
         val nameLabel = composeRule.activity.getString(R.string.name)
 
         composeRule.onNodeWithText(programsTab).performClick()
@@ -35,7 +35,7 @@ class MainActivityTest {
 
         composeRule.onNodeWithText(profileTab).performClick()
         composeRule.onNodeWithText(settingsLabel).performClick()
-        composeRule.onNodeWithText(backupSection).assertIsDisplayed()
+        composeRule.onNodeWithText(themeSection).assertIsDisplayed()
 
         // Tapping the active Profile tab on the bottom bar pops Settings back to ProfileScreen.
         composeRule.onNodeWithText(profileTab).performClick()

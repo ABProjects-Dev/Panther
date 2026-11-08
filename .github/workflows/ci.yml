@@ -38,12 +38,12 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 1
-      # Publish the JUnit counts into the job summary for a quick, auditable signal.
-      - name: Summarise unit test results
+      # Publish the JUnit and Android Lint counts into the job summary for a quick, auditable signal.
+      - name: Summarise unit test and lint results
         if: ${{ !cancelled() }}
         run: |
           python3 - <<'EOF'
-          import glob, xml.etree.ElementTree as ET, os
+          import glob, os, xml.etree.ElementTree as ET
           rows, total = [], dict(tests=0, failures=0, errors=0, skipped=0)
           for f in sorted(glob.glob("app/build/test-results/testDebugUnitTest/TEST-*.xml")):
               r = ET.parse(f).getroot()
@@ -53,6 +53,17 @@ jobs:
               rows.append(f"| {r.get('name')} | {d['tests']} | {d['failures']} | {d['errors']} | {d['skipped']} |")
           out = ["### Unit test results", "", "| Suite | Tests | Failures | Errors | Skipped |", "| --- | --- | --- | --- | --- |"] + rows
           out += ["", f"**Total: {total['tests']} tests, {total['failures']} failures, {total['errors']} errors, {total['skipped']} skipped**"]
+          lint_xml = "app/build/reports/lint-results-debug.xml"
+          if os.path.exists(lint_xml):
+              issues = ET.parse(lint_xml).getroot().findall("issue")
+              severe = [i for i in issues if i.get("severity") in ("Error", "Fatal")]
+              out += ["", f"### Android Lint", "", f"- Blocking issues (`Error`/`Fatal`): **{len(severe)}** (total reported: {len(issues)})"]
+              print(f"::notice::lintDebug results: {len(severe)} blocking issues, {len(issues)} total issues")
+              for issue in severe[:20]:
+                  loc = issue.find("location")
+                  where = f"{loc.get('file', '')}:{loc.get('line', '')}" if loc is not None else ""
+                  msg = (issue.get("message") or "").replace("\n", " ")
+                  print(f"::error::{issue.get('id')}: {msg} ({where})")
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as fh:
               fh.write("\n".join(out) + "\n")
           print("\n".join(out))
@@ -133,6 +144,30 @@ jobs:
           target: google_apis
           disable-animations: true
           script: ./gradlew :app:connectedDebugAndroidTest --stacktrace
+
+      - name: Summarise instrumentation test results
+        if: ${{ !cancelled() && steps.scope.outputs.needed == 'true' }}
+        run: |
+          python3 - <<'EOF'
+          import glob, os, xml.etree.ElementTree as ET
+          rows, total = [], dict(tests=0, failures=0, errors=0, skipped=0)
+          for f in sorted(glob.glob("app/build/outputs/androidTest-results/connected/**/TEST-*.xml", recursive=True)):
+              r = ET.parse(f).getroot()
+              d = {k: int(r.get(k, 0)) for k in total}
+              for k in total:
+                  total[k] += d[k]
+              rows.append(f"| {r.get('name')} | {d['tests']} | {d['failures']} | {d['errors']} | {d['skipped']} |")
+              for tc in r.findall("testcase"):
+                  for fail_el in list(tc.findall("failure")) + list(tc.findall("error")):
+                      msg = (fail_el.get("message") or fail_el.text or "").strip().splitlines()[0][:240]
+                      print(f"::error::{tc.get('classname')}.{tc.get('name')}: {msg}")
+          out = ["### Instrumentation test results", "", "| Suite | Tests | Failures | Errors | Skipped |", "| --- | --- | --- | --- | --- |"] + rows
+          out += ["", f"**Total: {total['tests']} tests, {total['failures']} failures, {total['errors']} errors, {total['skipped']} skipped**"]
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as fh:
+              fh.write("\n".join(out) + "\n")
+          print("\n".join(out))
+          print(f"::notice::instrumentation tests executed: {total['tests']} total, {total['failures']} failures, {total['errors']} errors, {total['skipped']} skipped")
+          EOF
 
       - name: Upload instrumentation reports
         if: ${{ !cancelled() }}
