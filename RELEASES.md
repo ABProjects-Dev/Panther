@@ -1,7 +1,7 @@
 # Panther Project Releases
 
 ## Official Releases (Rule 12)
-Releases are managed via GitHub Actions (`release.yml`) and tagged with Semantic Versioning (Rule 9).
+Releases are managed via GitHub Actions (`release.yml`) and tagged with Semantic Versioning (Rule 9) using Persian annotated tag descriptions (`AGENTS.md` Section 19.1).
 
 ### v1.0.1
 - **Date**: 2026-11-07
@@ -10,7 +10,7 @@ Releases are managed via GitHub Actions (`release.yml`) and tagged with Semantic
 - **Release Asset**: `app-release.apk` (`1,799,505` bytes)
 - **Notes**: UI/UX overhaul with bundled Vazirmatn typography, Jalali dates, read-only active-program dashboard with BMI card, tabbed training days, drag-and-drop exercise ordering, and searchable duration picker.
 - **Signature**: Signed and verified in `release.yml` via GitHub Secrets (Rule 13).
-- **Status**: Draft GitHub Release created (`draft: true`); awaiting manual owner review and publication per `AGENTS.md` section 17.
+- **Status**: Created as a draft GitHub Release under the pre-PR-#33 workflow.
 
 ### v1.0.0
 - **Date**: 2026-11-07
@@ -21,15 +21,19 @@ Releases are managed via GitHub Actions (`release.yml`) and tagged with Semantic
 - **Signature**: Verified via GitHub Secrets (Rule 13).
 - **Status**: Published on GitHub Releases.
 
-### Release history
+### Release history & current standard
 - `v1.0.0` is the first tagged release (`v0.1.0` was an untagged pre-release baseline).
-- Starting after `v1.0.1`, `release.yml` verifies APK Signature Scheme v2/v3 via `apksigner` and attaches both `app-release.apk` and `app-release.apk.sha256` to each draft GitHub Release.
+- Starting after `v1.0.1` (per `AGENTS.md` Section 19.1):
+  - Annotated release tags (`git tag -a vX.Y.Z`) carry **Persian** tag descriptions.
+  - Signed release APKs follow the `[AppName] Vx.y.z` naming convention (`Panther Vx.y.z.apk` and `Panther Vx.y.z.apk.sha256`), verified with `apksigner` (APK Signature Scheme v2/v3).
+  - Once the owner initiates `tag` and selects the version, `release.yml` publishes the GitHub Release **directly** (`draft: false`).
 
-## Release Policy (Rule 12)
-- Use Git tags on `main` for releases.
+## Release Policy (Rule 12 & Section 19.1)
+- Initiate releases only after the owner sends `tag` and explicitly selects the version.
+- Use annotated Git tags on `main` with Persian descriptions.
 - Never reuse an existing release tag.
 - Preserve historical releases.
-- Upload only verified build artifacts and SHA-256 checksums.
+- Upload only verified `Panther Vx.y.z.apk` artifacts and `.sha256` checksums.
 - Never upload signing keys or passwords.
 
 ## Maintenance

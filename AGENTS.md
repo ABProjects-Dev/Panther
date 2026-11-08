@@ -32,24 +32,28 @@ The final report must also be written in Persian and formatted RTL.
 
 3. Documentation Language Policy
 
-All source-controlled technical documentation must be written in English.
+All source-controlled technical documentation must be written in English, except for the explicit Persian items mandated by the project owner below.
 
-This includes:
+English documentation includes:
 
-- [README.md](http://README.md)
-- [AGENTS.md](http://AGENTS.md)
-- [ARCHITECTURE.md](http://ARCHITECTURE.md)
-- [REQUIREMENTS.md](http://REQUIREMENTS.md)
-- [CHANGELOG.md](http://CHANGELOG.md)
-- [RELEASES.md](http://RELEASES.md)
-- [API.md](http://API.md)
+- [README.md](README.md) (primary project README at the repository root)
+- [AGENTS.md](AGENTS.md)
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- [REQUIREMENTS.md](docs/REQUIREMENTS.md)
+- [CHANGELOG.md](CHANGELOG.md)
+- [RELEASES.md](RELEASES.md)
+- [API.md](docs/API.md)
 - Technical reports
 - Code comments
 - Commit messages
 - Branch names
 - GitHub Issues
 - Pull Requests
-- Release notes
+
+Mandatory Persian exceptions (per section 19.1):
+
+- [`.github/README.md`](.github/README.md): Full Persian (RTL) counterpart of the root English `README.md`, placed in `.github/README.md` so GitHub displays the Persian README on the repository homepage while the project itself retains the root English `README.md`.
+- **Git tag descriptions (`git tag -a`):** Annotated release tag messages must be written in Persian (and may appear in GitHub Release notes alongside generated commit notes).
 
 Application interface language is independent of documentation language and must follow the project requirements.
 
@@ -63,8 +67,10 @@ Recommended documentation structure:
 
 ```text
 project/
+├── .github/
+│   └── README.md        # Persian (RTL) README rendered on GitHub's repository page
 ├── AGENTS.md
-├── README.md
+├── README.md            # Primary English project README
 ├── CHANGELOG.md
 ├── RELEASES.md
 ├── docs/
@@ -72,15 +78,15 @@ project/
 │   ├── ARCHITECTURE.md
 │   ├── PROJECT_PLAN.md
 │   └── API.md
-├── src/
+├── app/
 └── ...
-
 ```
 
 Adapt the structure to the selected framework and project requirements.
 
 Rules:
 
+- Maintain both `README.md` (English, at repository root) and `.github/README.md` (Persian RTL, for GitHub display), and keep them strictly synchronized whenever features, architecture, build commands, or workflows change.
 - Do not create unnecessary documentation files.
 - Keep documentation synchronized with actual implementation.
 - Update relevant documentation whenever architecture, requirements, or behavior changes.
@@ -135,7 +141,6 @@ feat: add user profile screen
 fix: resolve application startup crash
 refactor: simplify database repository
 docs: update installation instructions
-
 ```
 
 - Do not commit unfinished or untested work to `main`.
@@ -187,7 +192,6 @@ Use Semantic Versioning:
 
 ```text
 MAJOR.MINOR.PATCH
-
 ```
 
 Examples:
@@ -200,8 +204,8 @@ Examples:
 Rules:
 
 - Keep version information consistent across relevant project files.
-- Maintain [CHANGELOG.md](http://CHANGELOG.md).
-- Use Git tags for releases.
+- Maintain [CHANGELOG.md](CHANGELOG.md).
+- Use annotated Git tags (`git tag -a vX.Y.Z -m "..."`) for releases, and write tag descriptions in **Persian** (per section 19.1).
 - Never reuse an existing release tag for a different version.
 - Never delete historical releases without explicit approval.
 
@@ -220,7 +224,7 @@ For Android projects:
 
 - Verify Debug builds.
 - Verify Release builds when release configuration is available.
-- Check application ID and version information.
+- Check application ID, version information, and APK filename format (`Panther Vx.y.z.apk`).
 - Verify signing configuration without exposing secrets.
 - Test installation and startup where possible.
 
@@ -239,7 +243,7 @@ Possible workflows include:
 - Debug builds.
 - Release builds.
 - Artifact uploads.
-- Release preparation.
+- Release publication.
 
 Rules:
 
@@ -250,7 +254,7 @@ Rules:
 - Keep workflow files understandable and maintainable.
 - Verify workflow results before reporting success.
 
-Do not publish a stable release automatically without project owner approval.
+Do not create or push a release tag without project owner approval (`tag` workflow in section 19.1). Once the owner selects and approves the release tag, `release.yml` publishes the GitHub Release directly (`draft: false`) without creating a draft.
 
 12. GitHub Releases and Build Artifacts
 
@@ -258,14 +262,16 @@ Use GitHub Releases for approved stable application releases.
 
 For Android projects, release artifacts may include:
 
-- APK
-- AAB
-- Relevant checksums
-- Release notes
+- APK named `[AppName] Vx.y.z.apk` (`Panther Vx.y.z.apk`)
+- AAB (when applicable)
+- Relevant checksums (`Panther Vx.y.z.apk.sha256`)
+- Release notes (including the Persian annotated tag description)
 
 Rules:
 
-- Use version tags such as `v1.0.0`.
+- Use version tags such as `v1.0.0` with Persian tag descriptions.
+- Name output APK files using the exact format `[AppName] Vx.y.z.apk` — specifically `Panther Vx.y.z.apk` (e.g., `Panther V1.0.2.apk`).
+- Publish releases directly (`draft: false`) via `release.yml` once the tag has been approved by the owner.
 - Include accurate release notes.
 - Upload only verified build artifacts.
 - Preserve historical releases.
@@ -383,7 +389,7 @@ Never delete essential files merely to reduce workspace size.
 
 Obtain explicit approval before:
 
-- Publishing a stable release.
+- Creating or pushing a release tag (which directly publishes a stable GitHub Release).
 - Deleting a repository.
 - Rewriting shared Git history.
 - Replacing an existing signing key.
@@ -404,7 +410,7 @@ Before completing a task, verify:
 - Existing functionality has not been unintentionally broken.
 - Relevant tests have been executed.
 - Build results have been verified when applicable.
-- Documentation has been updated.
+- Documentation (`README.md`, `.github/README.md`, and relevant `docs/*`) has been updated.
 - Git changes are organized.
 - No secrets or sensitive files were committed.
 - Important files have been preserved.
@@ -421,6 +427,7 @@ The final report must be written in Persian and include:
 6. Known issues and limitations.
 7. Remaining tasks.
 8. Any required project owner decisions.
+
 19. Project-Specific Instructions
 
 Project-specific requirements may be added to this file or to dedicated documentation.
@@ -436,7 +443,7 @@ Do not assume that instructions from another project apply to this repository.
 ### 19.1 Owner operating rules for agents
 
 These rules are set by the project owner and take precedence over the general
-recommendations in sections 6, 7 and 11.
+recommendations in sections 3, 4, 6, 7, 9, 11, 12, and 17.
 
 - **No pull request without an explicit request.** Do not open a pull request
   unless the project owner directly asks for one.
@@ -456,6 +463,23 @@ recommendations in sections 6, 7 and 11.
   list the available tag options (patch, minor and major with the resulting
   version numbers, derived from the latest release tag) and wait for the
   choice. Perform the release only after the owner selects one.
+- **Direct release publication (no drafts).** Once the owner selects and
+  approves a release tag via the `tag` workflow, `release.yml` must publish the
+  GitHub Release directly (`draft: false`). Do not create draft releases.
+- **Persian Git tag descriptions.** Always create annotated release tags
+  (`git tag -a vX.Y.Z -m "..."`) with clear **Persian** descriptions summarizing
+  the changes in that version.
+- **Dual README (`README.md` in English + `.github/README.md` in Persian).**
+  Keep the primary project `README.md` at the repository root in English for
+  project and tooling use, and maintain a complete Persian (RTL) counterpart at
+  `.github/README.md` so GitHub renders the Persian README on the repository
+  landing page. Update both files together whenever README-level information
+  changes.
+- **APK filename format (`[AppName] Vx.y.z`).** Generated APK files must use the
+  exact naming pattern `[AppName] Vx.y.z.apk` — specifically
+  `Panther Vx.y.z.apk` (capital `V` and a single space between `Panther` and the
+  version, e.g., `Panther V1.0.2.apk`, with companion checksum
+  `Panther V1.0.2.apk.sha256`).
 
 20. Final Operating Principle
 

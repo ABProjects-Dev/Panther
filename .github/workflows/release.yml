@@ -113,9 +113,11 @@ jobs:
       - name: Verify signed APK and generate SHA-256 checksum
         run: |
           set -euo pipefail
-          APK_PATH=$(find app/build/outputs/apk/release -maxdepth 1 -name "*.apk" | head -n 1)
-          if [ -z "$APK_PATH" ]; then
-            echo "::error::No release APK produced"
+          APK_BASENAME="Panther V${RELEASE_VERSION_NAME}.apk"
+          APK_PATH="app/build/outputs/apk/release/${APK_BASENAME}"
+          if [ ! -f "$APK_PATH" ]; then
+            echo "::error::Expected signed release APK not found at: $APK_PATH"
+            ls -la app/build/outputs/apk/release || true
             exit 1
           fi
           AAPT=$(find "$ANDROID_HOME/build-tools" -name aapt2 | sort -V | tail -n 1)
@@ -123,8 +125,9 @@ jobs:
           "$AAPT" dump badging "$APK_PATH" | grep -E "package:|versionCode:|versionName:"
           "$APKSIGNER" verify --verbose --min-sdk-version 26 --print-certs "$APK_PATH"
           (
-            cd "$(dirname "$APK_PATH")"
-            sha256sum "$(basename "$APK_PATH")" > "$(basename "$APK_PATH").sha256"
+            cd app/build/outputs/apk/release
+            sha256sum "$APK_BASENAME" > "${APK_BASENAME}.sha256"
+            sha256sum --check "${APK_BASENAME}.sha256"
           )
           cat "${APK_PATH}.sha256"
       - name: Upload release artifacts
@@ -143,7 +146,29 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      RELEASE_TAG: ${{ needs.validate-tag.outputs.tag }}
+      RELEASE_VERSION_NAME: ${{ needs.validate-tag.outputs.version }}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - name: Prepare release body from Persian tag annotation
+        run: |
+          set -euo pipefail
+          git fetch origin "+refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
+          TAG_TYPE=$(git cat-file -t "refs/tags/${RELEASE_TAG}" || true)
+          TAG_MESSAGE=""
+          if [ "$TAG_TYPE" = "tag" ]; then
+            TAG_MESSAGE=$(git for-each-ref "refs/tags/${RELEASE_TAG}" --format='%(contents)')
+          fi
+          {
+            if [ -n "$TAG_MESSAGE" ]; then
+              printf '<div dir="rtl">\n\n%s\n\n</div>\n\n---\n\n' "$TAG_MESSAGE"
+            fi
+            printf 'Official release of **Panther V%s** (`%s`).\n' "$RELEASE_VERSION_NAME" "$RELEASE_TAG"
+            printf 'APK filename: `Panther V%s.apk`\n' "$RELEASE_VERSION_NAME"
+          } > release-body.md
       - name: Download signed APK and checksum
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
@@ -151,21 +176,26 @@ jobs:
           path: release-artifacts
       - name: Verify checksum before release attachment
         run: |
+          set -euo pipefail
           cd release-artifacts
-          sha256sum --check *.apk.sha256
-      - name: Create draft release and attach artifacts
+          APK_BASENAME="Panther V${RELEASE_VERSION_NAME}.apk"
+          if [ ! -f "$APK_BASENAME" ]; then
+            echo "::error::Expected APK '${APK_BASENAME}' not found in release-artifacts"
+            ls -la
+            exit 1
+          fi
+          sha256sum --check "${APK_BASENAME}.sha256"
+      - name: Publish GitHub Release and attach artifacts
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           tag_name: ${{ needs.validate-tag.outputs.tag }}
-          name: Panther Release ${{ needs.validate-tag.outputs.tag }}
-          draft: true
+          name: Panther V${{ needs.validate-tag.outputs.version }}
+          draft: false
           prerelease: false
+          make_latest: 'true'
+          fail_on_unmatched_files: true
           generate_release_notes: true
-          append_body: true
-          body: |
-            Official release of Panther.
-            Version: ${{ needs.validate-tag.outputs.version }}
-            Build date: ${{ github.event.head_commit.timestamp || github.event.repository.updated_at }}
+          body_path: release-body.md
           files: |
             release-artifacts/*.apk
             release-artifacts/*.apk.sha256

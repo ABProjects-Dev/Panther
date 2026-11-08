@@ -1,3 +1,4 @@
+import com.android.build.gradle.internal.api.BaseVariantOutputImpl
 import java.util.Properties
 
 plugins {
@@ -79,6 +80,13 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true }
+
+    applicationVariants.all {
+        val variant = this
+        outputs.all {
+            (this as BaseVariantOutputImpl).outputFileName = "Panther V${variant.versionName}.apk"
+        }
+    }
 }
 
 ksp { arg("room.schemaLocation", "$projectDir/schemas") }

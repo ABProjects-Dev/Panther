@@ -3,9 +3,10 @@
 ## Overview
 
 Panther uses **two** workflows: `ci.yml` validates pull requests and
-`release.yml` produces the official, signed release. All third-party and
-first-party actions are pinned to full 40-character commit SHAs, and both
-workflows use `concurrency` groups and job-scoped least-privilege `permissions`.
+`release.yml` produces and directly publishes the official, signed release. All
+third-party and first-party actions are pinned to full 40-character commit SHAs,
+and both workflows use `concurrency` groups and job-scoped least-privilege
+`permissions`.
 
 ## Workflows
 
@@ -14,23 +15,27 @@ workflows use `concurrency` groups and job-scoped least-privilege `permissions`.
 - **Trigger:** pull requests targeting `main` only (owner rule, `AGENTS.md`
   section 19.1). Pushes to `main` and manual dispatch do **not** start a run.
 - **Jobs:** `lint-and-unit-tests` → `instrumentation-tests`.
-  `lint-and-unit-tests` runs `./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --stacktrace`
-  and verifies `app/schemas` matches the committed Room schema baseline.
+  `lint-and-unit-tests` runs
+  `./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace`,
+  publishes JUnit and Android Lint counts to `$GITHUB_STEP_SUMMARY` and check
+  annotations, and verifies `app/schemas` matches the committed Room schema
+  baseline.
 - **Artifacts:**
-  - `panther-debug-apk` (retention: `1` day)
+  - `panther-debug-apk` (`Panther V0.1.0.apk`, retention: `1` day)
   - `android-check-reports` (retention: `3` days)
   - `instrumentation-reports` (retention: `3` days)
-- **Instrumentation gating:** the API 29 emulator runs whenever source code,
-  resources, Gradle build files, or `.github/workflows/ci.yml` change. Pure
-  documentation/metadata edits (`docs/`, `*.md`, `.gitattributes`, issue/PR
-  templates, `release.yml`, `LICENSE`, etc.) skip the emulator.
+- **Instrumentation gating:** the API 29 emulator (`Nexus 6` profile) runs
+  whenever source code, resources, Gradle build files, or
+  `.github/workflows/ci.yml` change. Pure documentation/metadata edits (`docs/`,
+  `*.md`, `.github/README.md`, `.gitattributes`, issue/PR templates,
+  `release.yml`, `LICENSE`, etc.) skip the emulator.
 - **Permissions:** `contents: read`. Timeouts: 30 minutes (lint and unit
   tests), 45 minutes (instrumentation tests).
 
 ### 2. `release.yml` — Official Release
 
-- **Trigger:** push of a tag matching `v*.*.*`, or `workflow_dispatch` with an
-  existing `v*.*.*` tag.
+- **Trigger:** push of an owner-approved SemVer tag matching `v*.*.*`, or
+  `workflow_dispatch` with an existing `v*.*.*` tag.
 - **Jobs:** `validate-tag` → `build-and-sign-release` → `publish-release`.
 - **Tag & ancestry validation (`validate-tag`):**
   - Validates `vMAJOR.MINOR.PATCH` with `MINOR` and `PATCH` in `0..99` so
@@ -41,25 +46,29 @@ workflows use `concurrency` groups and job-scoped least-privilege `permissions`.
     builds the tagged commit rather than `HEAD` of the default branch).
   - Runs `./gradlew :app:testDebugUnitTest :app:lintDebug` before touching
     signing secrets.
-- **Signing & cleanup:**
+- **Signing, APK naming & cleanup:**
   - Decodes `KEYSTORE_BASE64` to `app/release.jks` (`0600`) and supplies
     `RELEASE_STORE_FILE`, `RELEASE_STORE_PASSWORD`, `RELEASE_KEY_ALIAS`, and
     `RELEASE_KEY_PASSWORD` via step environment variables (passwords are never
     written to `signing.properties` in CI).
+  - Produces the signed APK named `Panther V<MAJOR.MINOR.PATCH>.apk` (per
+    `AGENTS.md` section 19.1).
   - Removes `app/release.jks` in an `if: always()` cleanup step immediately
     after `assembleRelease`.
 - **Verification & checksums:**
   - Inspects package/version metadata with `aapt2 dump badging`.
   - Verifies Android APK Signature Scheme v2/v3 with
     `apksigner verify --verbose --min-sdk-version 26 --print-certs`.
-  - Generates `app-release.apk.sha256` and verifies it prior to release upload.
-- **Artifact & draft release (`publish-release`):**
+  - Generates `Panther V<MAJOR.MINOR.PATCH>.apk.sha256` and verifies it prior to
+    release upload.
+- **Artifact & direct publication (`publish-release`):**
   - Uploads workflow artifact `panther-official-release-<tag>` (retention:
     `30` days).
-  - Creates a **draft** GitHub Release attaching both `app-release.apk` and
-    `app-release.apk.sha256` (`permissions: contents: write` is scoped strictly
-    to `publish-release`). Manual publication requires explicit owner approval
-    (`AGENTS.md` section 17).
+  - Extracts the Persian annotated tag description (`git tag -a`) into the
+    release notes header and **publishes the GitHub Release directly**
+    (`draft: false`) attaching both `Panther V<MAJOR.MINOR.PATCH>.apk` and
+    `Panther V<MAJOR.MINOR.PATCH>.apk.sha256` (`permissions: contents: write` is
+    scoped strictly to `publish-release`).
 
 ## Removed workflows
 
@@ -84,6 +93,11 @@ through `ci.yml`.
   session branch).
 - CI runs only after a pull request; when green, stop and wait for owner
   approval.
-- Releases start only when the owner sends the word `tag`.
+- Releases start only when the owner sends the word `tag`; once a tag is
+  approved and pushed with a **Persian** annotated description, `release.yml`
+  publishes the release directly (`draft: false`) with APK filename
+  `Panther Vx.y.z.apk`.
+- Maintain both root `README.md` (English) and `.github/README.md` (Persian for
+  GitHub display) in sync.
 
 Language: English.
