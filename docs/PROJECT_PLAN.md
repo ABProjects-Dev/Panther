@@ -10,9 +10,10 @@
 ## Development & Release Workflow (`AGENTS.md` Section 19.1)
 1. Commit logical, verified changes to the single development branch (`dev`, or the platform-assigned Arena session branch).
 2. Open a pull request targeting `main` **only when explicitly requested by the project owner**.
-3. Verify `ci.yml` passes (unit tests, Android Lint, debug APK, Room schema baseline check, and API 29 emulator instrumentation tests), then stop and wait for explicit merge approval.
+3. For pull requests touching code, resources, build files, or workflows, verify `ci.yml` passes (unit tests, Android Lint, debug APK, Room schema baseline check, and API 29 emulator instrumentation tests), then stop and wait for explicit merge approval. Documentation-only pull requests skip `ci.yml` via `paths-ignore` and do not require running CI.
 4. Merge into `main` **only when explicitly requested by the project owner**.
-5. Initiate a release **only when the project owner sends `tag`**: present patch, minor, and major version options, wait for explicit owner selection, create the selected `vX.Y.Z` tag on `main` with a Persian annotated tag description, and verify `release.yml` publishes `Panther Vx.y.z` directly (`draft: false`).
+5. Before creating any release tag, ensure all release documentation (`CHANGELOG.md`, `RELEASES.md`, `README.md`, `.github/README.md`, and relevant `docs/*`) is updated, included in the release Pull Request, and merged into `main` (with owner approval).
+6. Initiate a release **only when the project owner sends `tag`**: present patch, minor, and major version options, wait for explicit owner selection, ensure the selected version's documentation is merged on `main`, create the `vX.Y.Z` tag on `main` with a Persian annotated tag description, and verify `release.yml` publishes `Panther Vx.y.z` directly (`draft: false`).
 
 ## Long-term Goals
 - Maintain offline-first reliability, strict data integrity, and zero-permission privacy (Rule 13, 14).

@@ -28,7 +28,7 @@ Panther is an offline-first Android application built with Kotlin, Jetpack Compo
 - **SDK**: Compile/Target 36, Min 26
 
 ## GitHub Actions Architecture
-- **CI (`ci.yml`)**: Runs on pull requests targeting `main` — unit tests, Android Lint, debug APK assembly, Room schema baseline verification, and API 29 emulator instrumentation tests.
+- **CI (`ci.yml`)**: Runs on pull requests targeting `main` (excluding documentation-only pull requests via `paths-ignore`) — unit tests, Android Lint, debug APK assembly, Room schema baseline verification, and API 29 emulator instrumentation tests.
 - **Release (`release.yml`)**: Validates SemVer tags on `origin/main`, runs unit tests and lint, builds and signs `Panther Vx.y.z.apk` via environment-variable secrets, verifies APK Signature Scheme v2/v3 with `apksigner`, generates `Panther Vx.y.z.apk.sha256` checksums, and publishes the GitHub Release directly (`draft: false`) including the Persian annotated tag description.
 - All workflow actions are pinned to full 40-character commit SHAs.
 

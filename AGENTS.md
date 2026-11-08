@@ -204,14 +204,15 @@ Examples:
 Rules:
 
 - Keep version information consistent across relevant project files.
-- Maintain [CHANGELOG.md](CHANGELOG.md).
+- Maintain [CHANGELOG.md](CHANGELOG.md) and [RELEASES.md](RELEASES.md).
+- Update all release-related documentation (`CHANGELOG.md`, `RELEASES.md`, `README.md`, `.github/README.md`, and affected files in `docs/`), include those updates in the release Pull Request, and merge them into `main` **before** creating or pushing the release tag (per section 19.1).
 - Use annotated Git tags (`git tag -a vX.Y.Z -m "..."`) for releases, and write tag descriptions in **Persian** (per section 19.1).
 - Never reuse an existing release tag for a different version.
 - Never delete historical releases without explicit approval.
 
 10. Build and Automated Testing
 
-Before considering a task complete:
+Before considering a code, build, or workflow task complete:
 
 - Run relevant automated tests.
 - Check for compilation errors.
@@ -219,6 +220,8 @@ Before considering a task complete:
 - Verify important application flows.
 - Check for regressions.
 - Confirm the final build configuration.
+
+Documentation-only changes (`*.md`, `docs/**`, `LICENSE`, templates, etc.) do not require running CI (`ci.yml`), per section 19.1.
 
 For Android projects:
 
@@ -250,11 +253,11 @@ Rules:
 - Use GitHub Secrets for required credentials.
 - Never hardcode sensitive values in workflow files.
 - Apply least-privilege permissions.
-- Avoid unnecessary workflow executions.
+- Avoid unnecessary workflow executions (documentation-only changes skip `ci.yml` entirely via `paths-ignore`, per section 19.1).
 - Keep workflow files understandable and maintainable.
 - Verify workflow results before reporting success.
 
-Do not create or push a release tag without project owner approval (`tag` workflow in section 19.1). Once the owner selects and approves the release tag, `release.yml` publishes the GitHub Release directly (`draft: false`) without creating a draft.
+Do not create or push a release tag without project owner approval (`tag` workflow in section 19.1), and ensure all release documentation updates have already been submitted in the release Pull Request and merged into `main` before tagging. Once the owner selects and approves the release tag, `release.yml` publishes the GitHub Release directly (`draft: false`) without creating a draft.
 
 12. GitHub Releases and Build Artifacts
 
@@ -269,6 +272,7 @@ For Android projects, release artifacts may include:
 
 Rules:
 
+- Update documentation (`CHANGELOG.md`, `RELEASES.md`, `README.md`, `.github/README.md`, and relevant `docs/*`), submit it with the release Pull Request, and merge it into `main` prior to creating the release tag (per section 19.1).
 - Use version tags such as `v1.0.0` with Persian tag descriptions.
 - Name output APK files using the exact format `[AppName] Vx.y.z.apk` — specifically `Panther Vx.y.z.apk` (e.g., `Panther V1.0.2.apk`).
 - Publish releases directly (`draft: false`) via `release.yml` once the tag has been approved by the owner.
@@ -443,7 +447,7 @@ Do not assume that instructions from another project apply to this repository.
 ### 19.1 Owner operating rules for agents
 
 These rules are set by the project owner and take precedence over the general
-recommendations in sections 3, 4, 6, 7, 9, 11, 12, and 17.
+recommendations in sections 3, 4, 6, 7, 9, 10, 11, 12, and 17.
 
 - **No pull request without an explicit request.** Do not open a pull request
   unless the project owner directly asks for one.
@@ -456,16 +460,37 @@ recommendations in sections 3, 4, 6, 7, 9, 11, 12, and 17.
   Inside an Arena Agent session the session branch is fixed by the platform and
   cannot be renamed or replaced, so apply the rule wherever branch creation is
   possible and keep the session history clean.
-- **CI runs only after a pull request.** `ci.yml` is triggered by the
-  `pull_request` event only. When the result is positive, stop, report the
-  result and wait for the owner's approval before merging.
+- **CI runs only after a pull request (excluding documentation-only changes).**
+  `ci.yml` is triggered only by the `pull_request` event targeting `main` when
+  source code, resources, build files, or workflows change. When `ci.yml` runs
+  and passes, stop, report the result and wait for the owner's approval before
+  merging.
+- **No CI run for documentation-only changes.** Changes limited to documentation
+  and repository metadata files (`**.md`, `docs/**`, `README.md`,
+  `.github/README.md`, `AGENTS.md`, `CHANGELOG.md`, `RELEASES.md`, `SECURITY.md`,
+  `LICENSE`, `.gitattributes`, `.github/ISSUE_TEMPLATE/**`, and PR templates) do
+  **not** require running CI. `ci.yml` ignores these paths via `paths-ignore` so
+  documentation-only pull requests do not trigger a workflow run; report such
+  pull requests ready for owner review/merge without running CI.
+- **Update and merge documentation before releasing.** Before creating and
+  pushing any release tag (`vX.Y.Z`), update all relevant documentation files
+  (`CHANGELOG.md`, `RELEASES.md`, `README.md`, `.github/README.md`, and affected
+  files in `docs/`) for that release version, include those documentation
+  updates in the release Pull Request, and merge that Pull Request into `main`
+  (with explicit owner approval for opening and merging the PR) **prior to
+  tagging**. Never create a release tag first and open a post-release
+  documentation Pull Request afterward — the tagged commit on `main` must
+  already contain the finalized release documentation.
 - **Releases start with the word `tag`.** When the owner sends the word `tag`,
   list the available tag options (patch, minor and major with the resulting
   version numbers, derived from the latest release tag) and wait for the
-  choice. Perform the release only after the owner selects one.
+  choice. Once the owner selects a version, ensure the release documentation for
+  that version has been updated, submitted via Pull Request, and merged into
+  `main` (with owner approval) before creating and pushing the release tag.
 - **Direct release publication (no drafts).** Once the owner selects and
-  approves a release tag via the `tag` workflow, `release.yml` must publish the
-  GitHub Release directly (`draft: false`). Do not create draft releases.
+  approves a release tag via the `tag` workflow (and pre-release documentation
+  is merged on `main`), `release.yml` must publish the GitHub Release directly
+  (`draft: false`). Do not create draft releases.
 - **Persian Git tag descriptions.** Always create annotated release tags
   (`git tag -a vX.Y.Z -m "..."`) with clear **Persian** descriptions summarizing
   the changes in that version.

@@ -1,12 +1,17 @@
 name: CI - Build, Test, Lint
 
 on:
-  # Owner rule (AGENTS.md section 19.1): CI runs only after a pull request is
-  # opened. Pushes to main and manual dispatch do not start a run, because the
-  # pull request already validated the same commit and a second run would be
-  # duplicate work.
+  # Owner rules (AGENTS.md section 19.1):
+  # 1. CI runs only after a pull request is opened (never on push or manual dispatch).
+  # 2. Documentation-only pull requests do not require running CI.
   pull_request:
     branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.gitattributes'
+      - '.github/ISSUE_TEMPLATE/**'
 
 permissions:
   contents: read
