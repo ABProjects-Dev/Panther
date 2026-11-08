@@ -33,6 +33,11 @@ data class ExerciseSet(
     val targetSeconds: Int? = null,
 )
 
+data class ExerciseWithSets(
+    val exercise: Exercise,
+    val sets: List<ExerciseSet>,
+)
+
 enum class BmiCategory { UNDERWEIGHT, NORMAL, OVERWEIGHT, OBESE }
 data class BmiResult(val value: Double, val category: BmiCategory)
 
@@ -157,14 +162,16 @@ object WorkoutValidation {
         (profile.heightCm == null || (profile.heightCm.isFinite() && profile.heightCm in 30.0..300.0)) &&
         (profile.weightKg == null || (profile.weightKg.isFinite() && profile.weightKg in 1.0..500.0))
 
-    fun sets(sets: List<ExerciseSet>): Boolean = sets.isNotEmpty() &&
-        sets.map { it.setNumber }.toSet().size == sets.size && sets.all { set ->
-            set.setNumber > 0 && when (set.targetType) {
-                TargetType.REPS -> set.targetValue != null && set.targetValue > 0 && set.targetMinutes == null && set.targetSeconds == null
-                TargetType.DURATION -> set.targetValue == null && set.targetMinutes != null && set.targetMinutes >= 0 &&
-                    set.targetSeconds != null && set.targetSeconds in 0..59 && (set.targetMinutes > 0 || set.targetSeconds > 0)
+    fun sets(sets: List<ExerciseSet>): Boolean =
+        sets.size in 1..PantherBackup.MAX_SETS_PER_EXERCISE &&
+            sets.map { it.setNumber }.toSet().size == sets.size &&
+            sets.all { set ->
+                set.setNumber > 0 && when (set.targetType) {
+                    TargetType.REPS -> set.targetValue != null && set.targetValue > 0 && set.targetMinutes == null && set.targetSeconds == null
+                    TargetType.DURATION -> set.targetValue == null && set.targetMinutes != null && set.targetMinutes >= 0 &&
+                        set.targetSeconds != null && set.targetSeconds in 0..59 && (set.targetMinutes > 0 || set.targetSeconds > 0)
+                }
             }
-        }
 
     fun backup(backup: PantherBackup): Boolean {
         if (backup.version != PantherBackup.CURRENT_BACKUP_VERSION) return false

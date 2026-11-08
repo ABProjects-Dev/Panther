@@ -14,17 +14,16 @@ interface PantherRepository {
     suspend fun deactivateProgram(id: Long)
     fun observeDays(programId: Long): Flow<List<TrainingDay>>
     fun observeExercises(dayId: Long): Flow<List<Exercise>>
+    fun observeExercisesWithSets(dayId: Long): Flow<List<ExerciseWithSets>>
     fun observeSets(exerciseId: Long): Flow<List<ExerciseSet>>
     suspend fun addDay(programId: Long, name: String, order: Int): Long
     suspend fun renameDay(id: Long, name: String)
     suspend fun deleteDay(id: Long)
     suspend fun reorderDays(programId: Long, ids: List<Long>)
-    suspend fun addExercise(dayId: Long, name: String, order: Int): Long
-    suspend fun renameExercise(id: Long, name: String)
     suspend fun saveExercise(dayId: Long, exerciseId: Long?, name: String, order: Int, sets: List<ExerciseSet>)
     suspend fun deleteExercise(id: Long)
     suspend fun reorderExercises(dayId: Long, ids: List<Long>)
-    suspend fun replaceSets(exerciseId: Long, sets: List<ExerciseSet>)
+    suspend fun createProgramBackup(programId: Long): ProgramBackup?
     suspend fun createBackup(): PantherBackup
     suspend fun restoreBackup(backup: PantherBackup)
 }
