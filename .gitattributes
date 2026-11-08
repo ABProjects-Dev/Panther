@@ -1,7 +1,7 @@
 * text=auto eol=lf
 *.bat text eol=crlf
-*.jar binary
 *.png binary
-*.jpg binary
+*.jar binary
+*.ttf binary
 *.jks binary
 *.keystore binary
