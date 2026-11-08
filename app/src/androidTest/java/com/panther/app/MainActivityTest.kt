@@ -2,6 +2,7 @@ package com.panther.app
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -33,18 +34,26 @@ class MainActivityTest {
         val nameLabel = composeRule.activity.getString(R.string.name)
 
         composeRule.onNodeWithText(programsTab).performClick()
-        composeRule.waitForIdle()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(newProgram).fetchSemanticsNodes().isNotEmpty()
+        }
         composeRule.onNodeWithText(newProgram).assertIsDisplayed()
 
         composeRule.onNodeWithText(profileTab).performClick()
-        composeRule.waitForIdle()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(settingsLabel).fetchSemanticsNodes().isNotEmpty()
+        }
         composeRule.onNodeWithText(settingsLabel).performScrollTo().performClick()
-        composeRule.waitForIdle()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(themeSection).fetchSemanticsNodes().isNotEmpty()
+        }
         composeRule.onNodeWithText(themeSection).performScrollTo().assertIsDisplayed()
 
         // Tapping the active Profile tab on the bottom bar pops Settings back to ProfileScreen.
         composeRule.onNodeWithText(profileTab).performClick()
-        composeRule.waitForIdle()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(nameLabel).fetchSemanticsNodes().isNotEmpty()
+        }
         composeRule.onNodeWithText(backLabel).assertDoesNotExist()
         composeRule.onNodeWithText(nameLabel).performScrollTo().assertIsDisplayed()
     }

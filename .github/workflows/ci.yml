@@ -142,6 +142,7 @@ jobs:
           api-level: 29
           arch: x86_64
           target: google_apis
+          profile: Nexus 6
           disable-animations: true
           script: ./gradlew :app:connectedDebugAndroidTest --stacktrace
 
@@ -159,8 +160,10 @@ jobs:
               rows.append(f"| {r.get('name')} | {d['tests']} | {d['failures']} | {d['errors']} | {d['skipped']} |")
               for tc in r.findall("testcase"):
                   for fail_el in list(tc.findall("failure")) + list(tc.findall("error")):
-                      msg = (fail_el.get("message") or fail_el.text or "").strip().splitlines()[0][:240]
-                      print(f"::error::{tc.get('classname')}.{tc.get('name')}: {msg}")
+                      lines = (fail_el.text or fail_el.get("message") or "").strip().splitlines()
+                      head = lines[0][:200] if lines else ""
+                      where = next((l.strip() for l in lines if "com.panther.app" in l), "")
+                      print(f"::error::{tc.get('classname')}.{tc.get('name')}: {head} {where}".strip())
           out = ["### Instrumentation test results", "", "| Suite | Tests | Failures | Errors | Skipped |", "| --- | --- | --- | --- | --- |"] + rows
           out += ["", f"**Total: {total['tests']} tests, {total['failures']} failures, {total['errors']} errors, {total['skipped']} skipped**"]
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as fh:
