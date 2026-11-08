@@ -1,9 +1,11 @@
 package com.panther.app
 
+import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Rule
 import org.junit.Test
@@ -27,18 +29,24 @@ class MainActivityTest {
         val newProgram = composeRule.activity.getString(R.string.new_program)
         val profileTab = composeRule.activity.getString(R.string.profile)
         val settingsLabel = composeRule.activity.getString(R.string.settings)
+        val backLabel = composeRule.activity.getString(R.string.back)
         val themeSection = composeRule.activity.getString(R.string.theme)
         val nameLabel = composeRule.activity.getString(R.string.name)
 
         composeRule.onNodeWithText(programsTab).performClick()
+        composeRule.waitForIdle()
         composeRule.onNodeWithText(newProgram).assertIsDisplayed()
 
         composeRule.onNodeWithText(profileTab).performClick()
-        composeRule.onNodeWithText(settingsLabel).performClick()
-        composeRule.onNodeWithText(themeSection).assertIsDisplayed()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText(settingsLabel).performScrollTo().performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText(themeSection).performScrollTo().assertIsDisplayed()
 
         // Tapping the active Profile tab on the bottom bar pops Settings back to ProfileScreen.
         composeRule.onNodeWithText(profileTab).performClick()
-        composeRule.onNodeWithText(nameLabel).assertIsDisplayed()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText(backLabel).assertDoesNotExist()
+        composeRule.onNodeWithText(nameLabel).performScrollTo().assertIsDisplayed()
     }
 }
