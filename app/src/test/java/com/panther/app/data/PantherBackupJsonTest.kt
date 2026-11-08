@@ -50,7 +50,9 @@ class PantherBackupJsonTest {
 
     @Test
     fun roundTripKeepsProfileAndIndependentTargets() {
-        assertEquals(sample(), PantherBackupJson.decode(PantherBackupJson.encode(sample())))
+        val encoded = PantherBackupJson.encode(sample())
+        assertEquals(sample(), PantherBackupJson.decode(encoded))
+        assertEquals(sample(), PantherBackupJson.decode(encoded.toByteArray(Charsets.UTF_8)))
     }
 
     /** Regression test for the originalId key mismatch that rejected every valid import. */
@@ -64,6 +66,19 @@ class PantherBackupJsonTest {
     fun encodedProgramUsesIdKey() {
         val json = PantherBackupJson.encode(sample())
         assertTrue("encoded backup must expose the program id key", json.contains("\"id\": 7"))
+    }
+
+    @Test
+    fun utf8ByteLengthMatchesPlatformEncodingAndRejectsOversizedBytePayloads() {
+        val samples = listOf("", "ASCII 123", "برنامه تمرینی پنگوئن ۱:۳۰", "Lift 🏋️‍♂️🔥")
+        samples.forEach { text ->
+            assertEquals(text.toByteArray(Charsets.UTF_8).size.toLong(), PantherBackupJson.utf8ByteLength(text))
+        }
+        try {
+            PantherBackupJson.decode(ByteArray(PantherBackup.MAX_BACKUP_BYTES + 1))
+            fail("Expected oversized byte array to be rejected")
+        } catch (_: IllegalArgumentException) {
+        }
     }
 
     @Test
