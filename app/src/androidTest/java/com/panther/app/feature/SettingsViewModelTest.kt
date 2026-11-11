@@ -1,7 +1,11 @@
 package com.panther.app.feature
 
+import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
+import androidx.annotation.RequiresApi
 import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -25,6 +29,8 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeNotNull
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -41,6 +47,7 @@ class SettingsViewModelTest {
     private lateinit var repository: RoomPantherRepository
     private lateinit var viewModel: SettingsViewModel
     private lateinit var snapshotFile: File
+    private val createdUris = mutableListOf<Uri>()
 
     @Before
     fun setup() {
@@ -56,7 +63,32 @@ class SettingsViewModelTest {
     fun tearDown() {
         db.close()
         snapshotFile.delete()
+        createdUris.forEach { uri -> runCatching { context.contentResolver.delete(uri, null, null) } }
+        createdUris.clear()
     }
+
+    /**
+     * A real `content://` document, so the export path runs through `ContentResolver` exactly as it
+     * does when the user picks a destination with the system file picker. Skipped (not failed) when
+     * the device exposes no external Downloads collection.
+     */
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private fun newDocumentUri(name: String, mimeType: String): Uri {
+        val values = ContentValues().apply {
+            put(MediaStore.Downloads.DISPLAY_NAME, name)
+            put(MediaStore.Downloads.MIME_TYPE, mimeType)
+        }
+        val uri = runCatching {
+            context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+        }.getOrNull()
+        assumeNotNull("no external Downloads collection on this device", uri)
+        createdUris += uri!!
+        return uri
+    }
+
+    private fun readAll(uri: Uri): ByteArray =
+        requireNotNull(context.contentResolver.openInputStream(uri)) { "cannot read back $uri" }
+            .use { it.readBytes() }
 
     private suspend fun awaitOperationMessage(): Int =
         withTimeout(15_000) { viewModel.operationMessage.first { it != null } }!!
@@ -93,6 +125,43 @@ class SettingsViewModelTest {
         assertNull(viewModel.pendingBackup.value)
         assertEquals("Keep me", repository.observePrograms().first().single().name)
         badFile.delete()
+    }
+
+    @Test
+    @RequiresApi(Build.VERSION_CODES.Q)
+    fun exportBackupWritesADecodableDocumentToThePickedLocation() = runBlocking<Unit> {
+        assumeTrue(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+        val target = newDocumentUri("panther-export.json", "application/json")
+        repository.createProgram("Exported")
+
+        viewModel.exportBackup(target)
+
+        assertEquals(R.string.backup_exported, awaitOperationMessage())
+        assertEquals("Exported", PantherBackupJson.decode(readAll(target)).programs.single().name)
+    }
+
+    @Test
+    @RequiresApi(Build.VERSION_CODES.Q)
+    fun exportProgramPdfWritesAPdfToThePickedLocation() = runBlocking<Unit> {
+        assumeTrue(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+        val target = newDocumentUri("panther-program.pdf", "application/pdf")
+        val programId = repository.createProgram("PDF plan")
+        val dayId = repository.addDay(programId, "Day A", 0)
+        repository.saveExercise(
+            dayId,
+            null,
+            "Squat",
+            0,
+            listOf(ExerciseSet(exerciseId = 0, setNumber = 1, targetType = TargetType.REPS, targetValue = 8)),
+        )
+
+        viewModel.exportProgramPdf(programId, target)
+
+        val message = withTimeout(15_000) { viewModel.pdfMessage.first { it != null } }
+        assertEquals(R.string.pdf_exported, message)
+        val bytes = readAll(target)
+        assertTrue("the exported document must not be empty", bytes.size > 100)
+        assertEquals("%PDF-", String(bytes, 0, 5, Charsets.US_ASCII))
     }
 
     private fun importedBackup() = PantherBackup(

@@ -13,8 +13,11 @@
 - `CONTRIBUTING.md` — contribution workflow, change hygiene and documentation-language rules.
 - Unit coverage for previously untested pure logic: `DurationCatalogTest` (18 tests) and
   `BmiCalculatorTest` (9 tests).
-- `SettingsViewModelTest` (instrumented, 2 tests): a malformed import is rejected without touching
-  existing data, and a confirmed restore writes the pre-restore snapshot before replacing it.
+- `SettingsViewModelTest` (instrumented, 4 tests): a malformed import is rejected without touching
+  existing data, a confirmed restore writes the pre-restore snapshot before replacing it, and both
+  exports write a decodable JSON document and a real PDF into a `content://` destination.
+- `EditorAvailabilityTest` (5 unit tests) and `ProgramNotFoundScreenTest` (instrumented) covering
+  the `editor/{id}` route resolution.
 - JaCoCo coverage for the debug unit tests (`./gradlew :app:jacocoDebugUnitTestReport`); `ci.yml`
   runs it and archives the HTML/XML report with the other check reports.
 
@@ -30,6 +33,9 @@
   user-facing Persian text lives in the domain anymore ([UI-03]).
 
 ### Fixed
+- Opening `editor/{id}` for a program that no longer exists (deleted elsewhere, stale link, or a
+  malformed argument that falls back to `0`) now shows a dedicated "برنامه پیدا نشد" screen with a
+  working back action instead of an empty editor whose actions targeted a missing row.
 - Readers following a documentation link no longer land on rule numbers that do not exist in
   `AGENTS.md` (documentation-only defect, no app behaviour change).
 - Restoring a backup now writes a best-effort snapshot of the current data to
