@@ -21,14 +21,14 @@ The following secrets must be configured in the repository settings (Settings ->
   ```bash
   base64 release.jks
   ```
-- **Security**: The Keystore file must be kept outside the repository (Rule 13 of AGENTS.md).
+- **Security**: The Keystore file must be kept outside the repository (`[SEC-07]` of `AGENTS.md`).
 
 ## Permissions
 - The `release.yml` workflow requires `contents: write` (only in the `publish` job, to publish the GitHub Release directly on owner-approved tags).
 - The `ci.yml` workflow uses `contents: read` only.
 - Scheduled cleanup no longer exists, so no workflow needs `actions: write`.
 
-## Security Best Practices (Rule 13)
+## Security Best Practices (`[SEC-01]`)
 - Never hardcode passwords or keys in workflow files.
 - Use `base64` encoding for binary files like Keystore.
 - Limit permissions to the minimum required for each job.

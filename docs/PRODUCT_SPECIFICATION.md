@@ -25,4 +25,4 @@ The interface is dark-first, supports light mode, Persian and RTL, and uses the 
 
 No workout session tracking, completed sets, actual repetitions, lifted weights, workout history, program archiving, profile image uploads, rest timers, workout start/finish, performance analytics, progress charts, exercise video/tutorial image libraries, coach or athlete accounts, online accounts, cloud sync or social networking. Set targets are plans, not recorded performance.
 
-Authoritative project guidance: [AGENTS.md](../AGENTS.md).
+Authoritative project guidance: [AGENTS.md](../AGENTS.md) (operating baseline) and [AGENTS.project.md](../AGENTS.project.md) (project rules).

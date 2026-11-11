@@ -14,8 +14,7 @@ and both workflows use `concurrency` groups and job-scoped least-privilege
 
 - **Trigger:** pull requests targeting `main` only, excluding documentation-only
   changes (`**.md`, `docs/**`, `LICENSE`, `.gitattributes`,
-  `.github/ISSUE_TEMPLATE/**`) via `paths-ignore` (owner rules, `AGENTS.md`
-  section 19.1). Pushes to `main`, manual dispatch, and documentation-only pull
+  `.github/ISSUE_TEMPLATE/**`) via `paths-ignore` (owner rules, `AGENTS.project.md`). Pushes to `main`, manual dispatch, and documentation-only pull
   requests do **not** start a run.
 - **Jobs:** `lint-and-unit-tests` → `instrumentation-tests`.
   `lint-and-unit-tests` runs
@@ -55,7 +54,7 @@ and both workflows use `concurrency` groups and job-scoped least-privilege
     `RELEASE_KEY_PASSWORD` via step environment variables (passwords are never
     written to `signing.properties` in CI).
   - Produces the signed APK named `Panther V<MAJOR.MINOR.PATCH>.apk` (per
-    `AGENTS.md` section 19.1).
+    `AGENTS.project.md`).
   - Removes `app/release.jks` in an `if: always()` cleanup step immediately
     after `assembleRelease`.
 - **Verification & checksums:**
@@ -84,11 +83,11 @@ and both workflows use `concurrency` groups and job-scoped least-privilege
 ## Dependency updates
 
 `.github/dependabot.yml` remains intentionally absent in accordance with
-`AGENTS.md` section 19.1 (no automatic branches or unrequested pull requests).
+`AGENTS.project.md` (no automatic branches or unrequested pull requests).
 Dependency and GitHub Action SHA updates are performed manually and verified
 through `ci.yml`.
 
-## Operating rules set by the owner (`AGENTS.md` section 19.1)
+## Operating rules set by the owner (`AGENTS.project.md`)
 
 - Do not open a pull request unless the owner directly asks for one.
 - Do not merge a pull request unless the owner directly asks for the merge.

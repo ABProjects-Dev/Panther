@@ -19,7 +19,7 @@ captures/
 *.iws
 .DS_Store
 
-# Signing material — must never be committed (AGENTS.md rule 13)
+# Signing material — must never be committed (AGENTS.md [SEC-07])
 *.jks
 *.keystore
 keystore.properties
