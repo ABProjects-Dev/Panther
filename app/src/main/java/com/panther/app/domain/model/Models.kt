@@ -60,19 +60,14 @@ object BmiCalculator {
     }
 }
 
+/**
+ * A duration target. Carries data only: the human-readable label is produced by the UI from
+ * `strings.xml` (`durationLabel` in `core/format/DurationLabels.kt`) so product wording never lives
+ * in the domain layer ([UI-03]).
+ */
 data class DurationOption(val minutes: Int, val seconds: Int) {
     val totalSeconds: Int get() = minutes * 60 + seconds
     val key: String get() = "$minutes:${seconds.toString().padStart(2, '0')}"
-    val compactLabel: String
-        get() = PantherDateFormat.persianDigits(
-            "${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}",
-        )
-    val displayLabel: String
-        get() = when {
-            minutes == 0 -> "${PantherDateFormat.persianNumber(seconds)} ثانیه ($compactLabel)"
-            seconds == 0 -> "${PantherDateFormat.persianNumber(minutes)} دقیقه ($compactLabel)"
-            else -> "${PantherDateFormat.persianNumber(minutes)} دقیقه و ${PantherDateFormat.persianNumber(seconds)} ثانیه ($compactLabel)"
-        }
 }
 
 object DurationCatalog {
@@ -104,14 +99,22 @@ object DurationCatalog {
         return (presets + extra).sortedBy { it.totalSeconds }
     }
 
-    fun search(query: String, extraRaw: String? = null): List<DurationOption> {
+    /**
+     * @param labelOf optional localized label resolver; when provided, the human-readable wording
+     *   takes part in matching as well (the UI passes `durationLabel`).
+     */
+    fun search(
+        query: String,
+        extraRaw: String? = null,
+        labelOf: ((DurationOption) -> String)? = null,
+    ): List<DurationOption> {
         val all = optionsIncluding(extraRaw)
         val normalizedQuery = PantherDateFormat.asciiDigits(query).trim().lowercase()
         if (normalizedQuery.isEmpty()) return all
         return all.filter { option ->
             val paddedKey = "${option.minutes.toString().padStart(2, '0')}:${option.seconds.toString().padStart(2, '0')}"
-            val normalizedLabel = PantherDateFormat.asciiDigits(option.displayLabel).lowercase()
-            normalizedLabel.contains(normalizedQuery) ||
+            val normalizedLabel = labelOf?.let { PantherDateFormat.asciiDigits(it(option)).lowercase() }
+            normalizedLabel?.contains(normalizedQuery) == true ||
                 option.key.contains(normalizedQuery) ||
                 paddedKey.contains(normalizedQuery) ||
                 option.totalSeconds.toString() == normalizedQuery

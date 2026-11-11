@@ -1,5 +1,6 @@
 package com.panther.app.domain
 
+import com.panther.app.core.format.PantherDateFormat
 import com.panther.app.domain.model.DurationCatalog
 import com.panther.app.domain.model.DurationOption
 import org.junit.Assert.assertEquals
@@ -105,10 +106,20 @@ class DurationCatalogTest {
     }
 
     @Test
-    fun searchMatchesPersianQueryAgainstTheLabel() {
-        val results = DurationCatalog.search("۲ دقیقه")
-        assertFalse(results.isEmpty())
-        assertTrue(results.any { it.minutes == 2 })
+    fun searchMatchesPersianQueryOnlyWhenALabelResolverIsProvided() {
+        val labelOf: (DurationOption) -> String = { option ->
+            when {
+                option.minutes == 0 -> "${PantherDateFormat.persianNumber(option.seconds)} ثانیه"
+                option.seconds == 0 -> "${PantherDateFormat.persianNumber(option.minutes)} دقیقه"
+                else -> "${PantherDateFormat.persianNumber(option.minutes)} دقیقه و " +
+                    "${PantherDateFormat.persianNumber(option.seconds)} ثانیه"
+            }
+        }
+        val withLabel = DurationCatalog.search("۲ دقیقه", labelOf = labelOf)
+        assertFalse(withLabel.isEmpty())
+        assertTrue(withLabel.any { it.minutes == 2 })
+        // Without a resolver only keys and total seconds are searchable, never the wording.
+        assertTrue(DurationCatalog.search("دقیقه").isEmpty())
     }
 
     @Test
@@ -125,9 +136,9 @@ class DurationCatalogTest {
     }
 
     @Test
-    fun optionKeyUsesPaddedSecondsAndCompactLabelUsesPersianDigits() {
+    fun keyUsesPaddedSecondsAndTheUiFormatsItWithPersianDigits() {
         val option = DurationOption(minutes = 3, seconds = 5)
         assertEquals("3:05", option.key)
-        assertEquals("۰۳:۰۵", option.compactLabel)
+        assertEquals("۰۳:۰۵", PantherDateFormat.persianDigits(option.key.padStart(5, '0')))
     }
 }

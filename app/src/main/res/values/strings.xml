@@ -68,6 +68,9 @@
     <string name="duration_search_placeholder">جست‌وجوی زمان (مثلاً ۳۰ یا ۱:۳۰)…</string>
     <string name="clear_search">پاک کردن جست‌وجو</string>
     <string name="duration_no_results">گزینه‌ای مطابق جست‌وجو یافت نشد.</string>
+    <string name="duration_label_seconds">%1$s ثانیه (%2$s)</string>
+    <string name="duration_label_minutes">%1$s دقیقه (%2$s)</string>
+    <string name="duration_label_minutes_seconds">%1$s دقیقه و %2$s ثانیه (%3$s)</string>
     <string name="reps_unit_short">تکرار</string>
     <string name="individual_targets_hint">هدف هر ست جداگانه ذخیره می‌شود؛ این مقادیر برنامه‌ریزی هستند، نه ثبت عملکرد.</string>
     <string name="error_exercise">نام، تعداد ست‌ها و هدف هر ست را بررسی کنید.</string>

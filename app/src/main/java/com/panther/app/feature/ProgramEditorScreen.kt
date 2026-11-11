@@ -44,6 +44,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -52,6 +53,8 @@ import com.panther.app.core.designsystem.components.*
 import com.panther.app.core.designsystem.theme.LocalPantherColors
 import com.panther.app.core.designsystem.theme.PantherSpacing
 import com.panther.app.core.format.PantherDateFormat
+import com.panther.app.core.format.durationLabel
+import com.panther.app.core.format.durationLabelResolver
 import com.panther.app.domain.model.*
 import java.util.ArrayList
 import kotlinx.coroutines.delay
@@ -1215,6 +1218,7 @@ private fun DurationSearchableSelectField(
     onToggleExpanded: () -> Unit,
 ) {
     val selectedOption = remember(selectedRaw) { DurationCatalog.parse(selectedRaw) }
+    val context = LocalContext.current
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -1240,7 +1244,8 @@ private fun DurationSearchableSelectField(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = selectedOption?.displayLabel ?: PantherDateFormat.persianDigits(selectedRaw),
+                    text = selectedOption?.let { durationLabel(context, it) }
+                        ?: PantherDateFormat.persianDigits(selectedRaw),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                 )
@@ -1262,9 +1267,11 @@ private fun DurationSearchablePickerDialog(
     onSelectOption: (DurationOption) -> Unit,
 ) {
     var searchQuery by rememberSaveable { mutableStateOf("") }
+    val context = LocalContext.current
+    val labelOf = remember(context) { durationLabelResolver(context) }
     val selectedOption = remember(selectedRaw) { DurationCatalog.parse(selectedRaw) }
-    val filteredOptions = remember(searchQuery, selectedRaw) {
-        DurationCatalog.search(searchQuery, extraRaw = selectedRaw)
+    val filteredOptions = remember(searchQuery, selectedRaw, labelOf) {
+        DurationCatalog.search(searchQuery, extraRaw = selectedRaw, labelOf = labelOf)
     }
 
     AlertDialog(
@@ -1329,7 +1336,7 @@ private fun DurationSearchablePickerDialog(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
-                                    text = option.displayLabel,
+                                    text = labelOf(option),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                     color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,

@@ -21,6 +21,9 @@
 - `README.md` gained a documentation index pointing at the new files.
 - Backup and PDF exports render into a cache file first and are copied into the chosen document
   afterwards, so a failure during generation cannot leave a truncated file.
+- Duration labels ("۳۰ ثانیه (۰۰:۳۰)") are now built from `strings.xml` in the UI layer; the domain
+  model carries data only and `DurationCatalog.search` takes an optional label resolver, so no
+  user-facing Persian text lives in the domain anymore ([UI-03]).
 
 ### Fixed
 - Readers following a documentation link no longer land on rule numbers that do not exist in
