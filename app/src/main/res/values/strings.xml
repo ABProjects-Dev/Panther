@@ -21,6 +21,7 @@
     <string name="no_active">هنوز برنامه فعالی انتخاب نشده است.</string>
     <string name="new_program">ساخت برنامه جدید</string>
     <string name="no_programs">هنوز برنامه‌ای ساخته نشده است.</string>
+    <string name="program_not_found_hint">برنامه حذف شده است. به فهرست برنامه‌ها برگردید.</string>
     <string name="program_name">نام برنامه</string>
     <string name="edit_program">ویرایش نام برنامه</string>
     <string name="delete_program">حذف برنامه</string>

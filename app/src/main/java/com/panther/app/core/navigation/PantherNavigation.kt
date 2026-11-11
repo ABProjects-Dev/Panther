@@ -120,15 +120,14 @@ fun PantherNavigation(
                 route = "editor/{id}",
                 arguments = listOf(navArgument("id") { type = NavType.LongType }),
             ) { backStack ->
-                val id = backStack.arguments?.getLong("id")
-                if (id != null) {
-                    ProgramEditorScreen(
-                        viewModel = programs,
-                        settings = settings,
-                        programId = id,
-                        onBack = { navController.popBackStack() },
-                    )
-                }
+                ProgramEditorScreen(
+                    viewModel = programs,
+                    settings = settings,
+                    // A missing argument falls back to 0, which the screen reports as "not found"
+                    // instead of leaving an empty destination on the back stack.
+                    programId = backStack.arguments?.getLong("id") ?: 0L,
+                    onBack = { navController.popBackStack() },
+                )
             }
         }
     }

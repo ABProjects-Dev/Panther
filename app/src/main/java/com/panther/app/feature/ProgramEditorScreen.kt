@@ -84,6 +84,15 @@ fun ProgramEditorScreen(
     val vmError by viewModel.error.collectAsStateWithLifecycle()
     val pdfMessage by settings.pdfMessage.collectAsStateWithLifecycle()
     val program = programsState.value.firstOrNull { it.id == programId }
+
+    // `editor/{id}` can outlive the program it points at (deleted from another screen, a stale
+    // deep link, or a malformed id). Show an explicit message instead of an empty editor whose
+    // actions would all target a row that does not exist.
+    if (editorAvailability(programsState, programId) == EditorAvailability.MISSING) {
+        ProgramNotFoundScreen(onBack = onBack)
+        return
+    }
+
     val activeColors = LocalPantherColors.current
 
     val pdfLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
@@ -179,11 +188,9 @@ fun ProgramEditorScreen(
         }
 
         if (program == null) {
-            if (!programsState.loading) {
-                Text(stringResource(R.string.program_not_found), color = MaterialTheme.colorScheme.error)
-            } else {
-                Text(stringResource(R.string.loading))
-            }
+            // Only the first, still-loading emission reaches this point; a program that is really
+            // gone is a terminal state rendered by `ProgramNotFoundScreen` above.
+            Text(stringResource(R.string.loading))
             return@Column
         }
 
@@ -1363,4 +1370,30 @@ private fun DurationSearchablePickerDialog(
             }
         },
     )
+}
+
+/** Terminal state for `editor/{id}` when the program behind the id does not exist. */
+@Composable
+fun ProgramNotFoundScreen(onBack: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = PantherSpacing.medium, vertical = PantherSpacing.small),
+        verticalArrangement = Arrangement.spacedBy(PantherSpacing.compact),
+    ) {
+        TextButton(onClick = onBack) {
+            Text(stringResource(R.string.back))
+        }
+        PantherCard {
+            Text(
+                text = stringResource(R.string.program_not_found),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Text(
+                text = stringResource(R.string.program_not_found_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
