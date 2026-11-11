@@ -1,7 +1,8 @@
 # Panther Project Plan
 
 ## Current Phase: Stabilization, Hardening, and Quality Assurance
-- **Status**: Active (2026-11-08) — `v1.0.0` and `v1.1.0` published directly on GitHub Releases.
+- **Status**: Active (2026-11-11) — `v1.0.0`, `v1.1.0` and `v1.2.0` published directly on GitHub
+  Releases.
 - **Completed Milestones**:
   - Delivered core offline workout planning, BMI dashboard, Vazirmatn RTL design system, Jalali date formatting, JSON backup/restore, and PDF export.
   - Hardened data ordering invariants, symmetric validation limits, configuration-change state preservation, edge-to-edge system bar contrast, and TalkBack accessibility.

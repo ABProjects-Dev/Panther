@@ -1,6 +1,6 @@
 # Panther Project Changelog
 
-## [Unreleased]
+## [v1.2.0] - 2026-11-11
 
 ### Added
 - `AGENTS.project.md` — project rules (stack, commands, conventions, stricter rules, paths, off-limits)
@@ -151,6 +151,7 @@ CI pipeline (unit tests, lint, debug APK, and instrumentation tests on an emulat
 - `v1.0.0`: First stable release.
 - `v1.1.0`: Backward-compatible feature addition.
 - `v1.1.1`: Backward-compatible bug fix.
+- `v1.2.0`: Backward-compatible features, hardening and tooling.
 - `v2.0.0`: Incompatible changes.
 
 Language: English (`[DOC-13]`)

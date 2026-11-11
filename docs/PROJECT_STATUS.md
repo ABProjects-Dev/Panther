@@ -1,27 +1,31 @@
 # Project status — Panther
 
-Updated: 2026-11-11 · Version: `v1.1.0` (latest published release) · Baseline: `AGENTS.md` 1.0.0
+Updated: 2026-11-11 · Version: `v1.2.0` (release documentation) · Baseline: `AGENTS.md` 1.0.0
 Template: `AGENTS.md` §29.3 · Dated claims only (`[DOC-06]`).
 
 ## Current state
 
 Panther is an offline-first Android application for planning bodybuilding workout routines, with a
-Persian RTL interface, Vazirmatn typography and Jalali dates. `v1.1.0` is published on GitHub
-Releases; `main` is at `7775485`. The project adopted the *Agent Operating Baseline* (`AGENTS.md`
-1.0.0) in commit `7775485`, which replaced the numbered-rule document; project-specific rules now
-live in `AGENTS.project.md`.
+Persian RTL interface, Vazirmatn typography and Jalali dates. `v1.1.0` is the latest published
+release; `v1.2.0` is tagged from `main` after the audit-remediation set (PR #39, merge `a830943`) was
+merged. The project adopted the *Agent Operating Baseline* (`AGENTS.md` 1.0.0) in commit `7775485`,
+which replaced the numbered-rule document; project-specific rules now live in `AGENTS.project.md`.
 
 ## Completed
 
 - 2026-11-07 — first stable release, full CI/CD (`v1.0.0`).
 - 2026-11-08 — RTL redesign, Jalali dates, Room/backup hardening, signed direct publication (`v1.1.0`).
 - 2026-11-11 — adopted `AGENTS.md` 1.0.0 as the agent baseline (commit `7775485`, direct push by owner).
+- 2026-11-11 — audit remediation set merged as PR #39 (`a830943`): font licence, protected-file guard,
+  restore snapshot, atomic exports, duplicate-release guard, string-resource duration labels,
+  `editor/{id}` not-found screen, 57 + 16 tests, JaCoCo coverage and CI build annotations.
+- 2026-11-11 — `v1.2.0` release documentation finalized; `PD-002` decided in favour of Persian.
 
 ## In progress
 
 | item | owner | expected | blocker |
 |---|---|---|---|
-| Audit remediation set 1: font licence, protected-file guard, restore snapshot, doc fixes | agent session | awaiting owner review | needs approval to push/PR |
+| Room schema cleanup and build-toolchain upgrade | owner / agent on a workstation | next minor cycle | needs a machine with a JDK and the Android SDK; a schema or toolchain change cannot be built or diagnosed in the agent sandbox |
 
 ## Confirmed defects
 
@@ -32,8 +36,8 @@ live in `AGENTS.project.md`.
 
 ## Next tasks
 
-1. Resolve `PD-001`–`PD-003` (below); no release may be tagged until they are decided.
-2. On owner approval, push the current change set and open a pull request if requested.
+1. Decide the two remaining pending items, `PD-001` (APK artifact name) and `PD-003` (Persian README
+   path); `PD-002` was decided on 2026-11-11 in favour of Persian tag descriptions.
 3. Turn on branch protection for `main` in repository settings — the remaining half of `[PROT-06]`;
    `CODEOWNERS` and the `protected-files.yml` guard are in place, branch protection is still
    **unverified** because the API returns `403` for the available token.
@@ -58,7 +62,7 @@ live in `AGENTS.project.md`.
 | id | decision | options | who decides | by when |
 |---|---|---|---|---|
 | PD-001 | APK artifact name (baseline `[REL-07]` says `<project>-<version>-<platform>.<ext>`; project ships `Panther Vx.y.z.apk`) | keep current name with a recorded waiver, or rename and update `release.yml`, `app/build.gradle.kts`, docs | owner | before the next tag |
-| PD-002 | Annotated tag message language (baseline `[REL-09]` says English; project uses Persian) | switch to English, or record a deviation | owner | before the next tag |
+| PD-002 | ~~Annotated tag message language~~ — **decided 2026-11-11: Persian**, deviation from `[REL-09]` recorded in `RELEASES.md` and `AGENTS.project.md` | — | owner | done |
 | PD-003 | Persian README location (baseline `[DOC-17]` wants `README.fa.md`; project uses `.github/README.md`) | keep `.github/README.md` (it is what GitHub renders), or rename and lose the homepage rendering | owner | before the next release |
 
 ## Validation status
@@ -71,6 +75,8 @@ live in `AGENTS.project.md`.
 | `./gradlew :app:testDebugUnitTest` | never in this environment | **not run** — no JDK/Android SDK in the agent sandbox |
 | `./gradlew :app:jacocoDebugUnitTestReport` | never in this environment | **not run** locally; executed by `ci.yml` in the `lint-and-unit-tests` job on every pull request |
 | `./gradlew :app:connectedDebugAndroidTest` | never in this environment | **not run** locally; executed by the `instrumentation-tests` job on pull requests that touch source |
+| `ci.yml` on PR #39 (`820b9ec`) | 2026-11-11 | Lint and unit tests pass (57 tests, 0 blocking lint issues); Instrumentation tests pass (16 tests, 0 skipped, emulator API 29); `AGENTS.md` guard pass |
+| PR #39 merge | 2026-11-11 | merged on owner instruction as `a830943` (31 files) |
 | Exported-schema baseline (`app/schemas`) | 2026-11-11 | still version 1 only; the dead-column cleanup stays open until `2.json` can be generated by a real build |
 | `./gradlew :app:lintDebug` | never in this environment | **not run** — same reason |
 | `./gradlew :app:connectedDebugAndroidTest` | never in this environment | **not run** — needs an emulator |
