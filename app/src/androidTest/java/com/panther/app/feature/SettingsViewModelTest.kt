@@ -8,6 +8,7 @@ import android.provider.MediaStore
 import androidx.annotation.RequiresApi
 import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
 import com.panther.app.R
 import com.panther.app.core.settings.ThemePreferences
@@ -31,7 +32,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeNotNull
-import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -130,9 +130,8 @@ class SettingsViewModelTest {
     }
 
     @Test
-    @RequiresApi(Build.VERSION_CODES.Q)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.Q)
     fun exportBackupWritesADecodableDocumentToThePickedLocation() = runBlocking<Unit> {
-        assumeTrue(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
         val target = newDocumentUri("panther-export.json", "application/json")
         repository.createProgram("Exported")
 
@@ -143,9 +142,8 @@ class SettingsViewModelTest {
     }
 
     @Test
-    @RequiresApi(Build.VERSION_CODES.Q)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.Q)
     fun exportProgramPdfWritesAPdfToThePickedLocation() = runBlocking<Unit> {
-        assumeTrue(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
         val target = newDocumentUri("panther-program.pdf", "application/pdf")
         val programId = repository.createProgram("PDF plan")
         val dayId = repository.addDay(programId, "Day A", 0)
