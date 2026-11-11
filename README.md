@@ -62,7 +62,7 @@ The application features a three-destination navigation shell (`Home`, `Programs
 
 ## GitHub Actions
 
-Android CI runs on pull requests targeting `main` only (excluding documentation-only pull requests via `paths-ignore`); pushes to `main`, manual dispatch, and documentation-only changes do not start a CI run (owner rules, `AGENTS.md` section 19.1). When triggered, it builds the debug and androidTest APKs, runs unit tests and lint, verifies the committed Room schema baseline, and runs instrumented tests on an API 29 emulator (non-code workflow/metadata edits such as `release.yml` skip the emulator).
+Android CI runs on pull requests targeting `main` only (excluding documentation-only pull requests via `paths-ignore`); pushes to `main`, manual dispatch, and documentation-only changes do not start a CI run (owner rules, `AGENTS.project.md`). When triggered, it builds the debug and androidTest APKs, runs unit tests and lint, verifies the committed Room schema baseline, and runs instrumented tests on an API 29 emulator (non-code workflow/metadata edits such as `release.yml` skip the emulator).
 
 Two workflows are defined (with actions pinned to immutable commit SHAs):
 
@@ -70,6 +70,19 @@ Two workflows are defined (with actions pinned to immutable commit SHAs):
 - `release.yml` — validates SemVer tag format and `origin/main` ancestry, runs unit tests and lint, builds and signs `Panther Vx.y.z.apk` from the exact tag commit, verifies APK Signature Scheme v2/v3 via `apksigner`, generates `Panther Vx.y.z.apk.sha256`, and publishes the GitHub Release directly (`draft: false`) including the Persian annotated tag description.
 
 See [docs/GITHUB_ACTIONS.md](docs/GITHUB_ACTIONS.md) for the authoritative description.
+
+## Documentation
+
+- [AGENTS.md](AGENTS.md) — agent operating baseline (protected, read-only).
+- [AGENTS.project.md](AGENTS.project.md) — project rules: stack, commands, conventions, off-limits paths.
+- [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md) — current state, defects, next tasks, pending decisions.
+- [docs/TESTING.md](docs/TESTING.md) — test commands, suite inventory, known limitations.
+- [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) · [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) ·
+  [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md) · [docs/API.md](docs/API.md) ·
+  [docs/RELEASE_GUIDE.md](docs/RELEASE_GUIDE.md) · [docs/SECRETS_SETUP.md](docs/SECRETS_SETUP.md) ·
+  [docs/decisions/](docs/decisions/).
+- [CONTRIBUTING.md](CONTRIBUTING.md) — how to build, test and submit a change.
+- [CHANGELOG.md](CHANGELOG.md) · [RELEASES.md](RELEASES.md) · [SECURITY.md](SECURITY.md).
 
 ## License
 

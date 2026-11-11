@@ -3,7 +3,7 @@
 ## Overview
 This document provides technical details for the Panther Android application APIs, including internal domain models, repository interfaces, ViewModels, backup codec, and GitHub Actions integration.
 
-## Domain Models (Rule 3)
+## Domain Models
 - **UserProfile**: Name, age, height (cm), weight (kg).
 - **BmiCalculator / BmiResult**: Calculates BMI and classifies into `UNDERWEIGHT`, `NORMAL`, `OVERWEIGHT`, or `OBESE`.
 - **DurationCatalog / DurationOption**: Preset and custom `mm:ss` durations with Persian/ASCII searchable filtering.
@@ -66,8 +66,8 @@ or `archived`.
 
 See [GITHUB_ACTIONS.md](GITHUB_ACTIONS.md) for the authoritative workflow documentation.
 
-## Secrets (Rule 13)
+## Secrets (`[SEC-01]`)
 - `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`, `KEYSTORE_BASE64`.
 
 Last Updated: 2026-11-07
-Language: English (Rule 3)
+Language: English (`[DOC-13]`)

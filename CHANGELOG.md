@@ -1,5 +1,31 @@
 # Panther Project Changelog
 
+## [Unreleased]
+
+### Added
+- `AGENTS.project.md` — project rules (stack, commands, conventions, stricter rules, paths, off-limits)
+  that pin the agent baseline `AGENTS.md` 1.0.0 and declare the Mobile profile.
+- `docs/PROJECT_STATUS.md` — dated project state, confirmed defects, next tasks, pending decisions and
+  validation status.
+- `docs/TESTING.md` — authoritative test commands, suite inventory and known limitations.
+- `docs/decisions/ADR-0001-adopt-agent-operating-baseline.md` and
+  `ADR-0002-defer-baseline-policy-conflicts.md`.
+- `CONTRIBUTING.md` — contribution workflow, change hygiene and documentation-language rules.
+
+### Changed
+- Documentation now cites the operating baseline by stable rule ID (`[SEC-07]`, `[REL-03]`, …) instead
+  of the removed `Rule N` / `section 19.1` numbering; 44 references across 13 files were repointed,
+  historical entries below were left unchanged on purpose.
+- `README.md` gained a documentation index pointing at the new files.
+
+### Fixed
+- Readers following a documentation link no longer land on rule numbers that do not exist in
+  `AGENTS.md` (documentation-only defect, no app behaviour change).
+
+### Security
+- Nothing changed in the app. Note for the next release: `PD-001`–`PD-003` in `docs/PROJECT_STATUS.md`
+  must be decided before tagging.
+
 ## [v1.1.0] - 2026-11-08
 
 Feature, UX, accessibility, data-integrity, and CI/release hardening release tagged on `main`
@@ -83,11 +109,11 @@ CI pipeline (unit tests, lint, debug APK, and instrumentation tests on an emulat
 - Initial project setup with Android SDK 36, Kotlin 2.0.21 (JVM target 17), and Jetpack Compose.
 - Basic workout management, profile management, and backup/restore features.
 
-## Semantic Versioning (Rule 9)
+## Semantic Versioning (`[REL-03]`)
 - `MAJOR.MINOR.PATCH`
 - `v1.0.0`: First stable release.
 - `v1.1.0`: Backward-compatible feature addition.
 - `v1.1.1`: Backward-compatible bug fix.
 - `v2.0.0`: Incompatible changes.
 
-Language: English (Rule 3)
+Language: English (`[DOC-13]`)

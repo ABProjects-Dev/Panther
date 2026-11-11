@@ -34,7 +34,7 @@ Panther is an offline-first Android application built with Kotlin, Jetpack Compo
 
 See [docs/GITHUB_ACTIONS.md](GITHUB_ACTIONS.md) for full pipeline details.
 
-## Security (Rule 13)
+## Security (`[SEC-02]`)
 - Keystore and signing credentials are stored exclusively in GitHub Secrets and passed via process environment variables during CI release builds.
 - No network permissions, analytics SDKs, or sensitive credentials exist in the repository.
 
@@ -43,4 +43,4 @@ See [docs/GITHUB_ACTIONS.md](GITHUB_ACTIONS.md) for full pipeline details.
 - Room schemas are exported to `app/schemas` and exposed to `androidTest` assets for `MigrationTestHelper`; every future schema version bump must commit its exported JSON and explicit migration.
 
 Last Updated: 2026-11-07
-Language: English (Rule 3)
+Language: English (`[DOC-13]`)
