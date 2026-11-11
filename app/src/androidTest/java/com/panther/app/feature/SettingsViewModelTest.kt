@@ -82,8 +82,9 @@ class SettingsViewModelTest {
             context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
         }.getOrNull()
         assumeNotNull("no external Downloads collection on this device", uri)
-        createdUris += uri!!
-        return uri
+        val document = requireNotNull(uri)
+        createdUris += document
+        return document
     }
 
     private fun readAll(uri: Uri): ByteArray =

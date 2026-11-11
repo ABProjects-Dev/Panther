@@ -20,6 +20,8 @@ and both workflows use `concurrency` groups and job-scoped least-privilege
   `lint-and-unit-tests` runs
   `./gradlew :app:testDebugUnitTest :app:jacocoDebugUnitTestReport :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace`,
   which also produces the JaCoCo coverage report archived in the `android-check-reports` artifact,
+  and a failed build repeats its diagnostic lines as `::error::` annotations (the raw job log lives
+  on a separate service that not every client can read).
   publishes JUnit and Android Lint counts to `$GITHUB_STEP_SUMMARY` and check
   annotations, and verifies `app/schemas` matches the committed Room schema
   baseline.

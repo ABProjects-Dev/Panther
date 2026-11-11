@@ -35,9 +35,28 @@ jobs:
       # ubuntu-latest runners ship the Android SDK (platform 36 is present), so no
       # setup-android step is required; adding one previously failed the job.
       - name: Run unit tests, lint and assemble
-        # jacocoDebugUnitTestReport reuses the test results of the same invocation and writes the
-        # coverage HTML/XML that the artifact step uploads.
-        run: ./gradlew :app:testDebugUnitTest :app:jacocoDebugUnitTestReport :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace
+        id: gradle
+        run: |
+          set -o pipefail
+          # jacocoDebugUnitTestReport reuses the test results of the same invocation and writes the
+          # coverage HTML/XML that the artifact step uploads.
+          ./gradlew :app:testDebugUnitTest :app:jacocoDebugUnitTestReport :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace 2>&1 | tee gradle-build.log
+      # The raw job log is uploaded to a separate service that not every client can read, so a failed
+      # build repeats the diagnostic lines as annotations, which the REST API does return.
+      - name: Annotate build failure
+        if: ${{ failure() && steps.gradle.outcome == 'failure' }}
+        run: |
+          python3 - <<'EOF'
+          import re
+          lines = open("gradle-build.log", errors="replace").read().splitlines()
+          markers = ("FAILURE:", "What went wrong:", "* What went wrong:", "* Exception", "* Try:", "error:")
+          picked = [
+              line for line in lines
+              if line.lstrip().startswith("e: ") or any(m in line for m in markers)
+          ][:25] or lines[-25:]
+          for line in picked:
+              print(f"::error::{line.strip()[:900]}")
+          EOF
       - name: Upload debug APK
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
