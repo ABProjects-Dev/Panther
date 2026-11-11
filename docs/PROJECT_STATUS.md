@@ -38,9 +38,11 @@ live in `AGENTS.project.md`.
    `CODEOWNERS` and the `protected-files.yml` guard are in place, branch protection is still
    **unverified** because the API returns `403` for the available token.
 4. Enable dependency-graph alerts, or record the decision to keep them disabled (`docs/REQUIREMENTS.md`).
-5. Audit follow-ups still open: tests for `SettingsViewModel`/`ProgramPdfExporter`/`SafeUriOutput`,
-   coverage measurement (JaCoCo), an error screen for an invalid `editor/{id}` route, Room schema
-   cleanup, and the staged dependency upgrade.
+5. Audit follow-ups still open: automated coverage of the SAF write path (`exportBackup`,
+   `exportProgramPdf` against a provider-backed `content://` document — the test APK ships no
+   DocumentsProvider, so this still needs a device harness), an error screen for an invalid
+   `editor/{id}` route, Room schema cleanup, and the staged dependency upgrade. Coverage is now
+   measured with JaCoCo (`jacocoDebugUnitTestReport`) and uploaded by `ci.yml`.
 
 ## Pending decisions
 
@@ -58,6 +60,8 @@ live in `AGENTS.project.md`.
 | stale rule-reference grep (`Rule N`, `19.1`) | 2026-11-11 | 45 stale citations before; 0 after the fix |
 | Markdown link existence check for touched docs | 2026-11-11 | all relative links resolve |
 | `./gradlew :app:testDebugUnitTest` | never in this environment | **not run** — no JDK/Android SDK in the agent sandbox |
+| `./gradlew :app:jacocoDebugUnitTestReport` | never in this environment | **not run** locally; executed by `ci.yml` in the `lint-and-unit-tests` job on every pull request |
+| `./gradlew :app:connectedDebugAndroidTest` | never in this environment | **not run** locally; executed by the `instrumentation-tests` job on pull requests that touch source |
 | `./gradlew :app:lintDebug` | never in this environment | **not run** — same reason |
 | `./gradlew :app:connectedDebugAndroidTest` | never in this environment | **not run** — needs an emulator |
 | `ci.yml` on a pull request | not triggered (no PR) | pending owner approval to push |

@@ -26,6 +26,7 @@ baseline wins until the owner decides (`[PREC-02]`).
 |---|---|
 | Debug build | `./gradlew :app:assembleDebug` |
 | Unit tests | `./gradlew :app:testDebugUnitTest` |
+| Unit-test coverage | `./gradlew :app:jacocoDebugUnitTestReport` |
 | Android Lint | `./gradlew :app:lintDebug` |
 | Instrumented tests | `./gradlew :app:connectedDebugAndroidTest` (emulator, API 29) |
 | Android-test APK only | `./gradlew :app:assembleDebugAndroidTest` |

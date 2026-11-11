@@ -18,7 +18,8 @@ and both workflows use `concurrency` groups and job-scoped least-privilege
   requests do **not** start a run.
 - **Jobs:** `lint-and-unit-tests` → `instrumentation-tests`.
   `lint-and-unit-tests` runs
-  `./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace`,
+  `./gradlew :app:testDebugUnitTest :app:jacocoDebugUnitTestReport :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace`,
+  which also produces the JaCoCo coverage report archived in the `android-check-reports` artifact,
   publishes JUnit and Android Lint counts to `$GITHUB_STEP_SUMMARY` and check
   annotations, and verifies `app/schemas` matches the committed Room schema
   baseline.

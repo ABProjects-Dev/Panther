@@ -13,6 +13,10 @@
 - `CONTRIBUTING.md` — contribution workflow, change hygiene and documentation-language rules.
 - Unit coverage for previously untested pure logic: `DurationCatalogTest` (18 tests) and
   `BmiCalculatorTest` (9 tests).
+- `SettingsViewModelTest` (instrumented, 2 tests): a malformed import is rejected without touching
+  existing data, and a confirmed restore writes the pre-restore snapshot before replacing it.
+- JaCoCo coverage for the debug unit tests (`./gradlew :app:jacocoDebugUnitTestReport`); `ci.yml`
+  runs it and archives the HTML/XML report with the other check reports.
 
 ### Changed
 - Documentation now cites the operating baseline by stable rule ID (`[SEC-07]`, `[REL-03]`, …) instead

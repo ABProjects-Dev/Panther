@@ -17,6 +17,7 @@ toolchain. Rules that require this document: `[DOC-04]` (Tier 2), `[VAL-08]`, `[
 | Check | Command | Notes |
 |---|---|---|
 | Unit tests | `./gradlew :app:testDebugUnitTest` | JVM only, no device needed |
+| Unit-test coverage | `./gradlew :app:jacocoDebugUnitTestReport` | HTML/XML under `app/build/reports/jacoco/jacocoDebugUnitTestReport/` |
 | Android Lint | `./gradlew :app:lintDebug` | Report: `app/build/reports/lint-results-debug.html` |
 | Compile debug APK | `./gradlew :app:assembleDebug` | Output: `app/build/outputs/apk/debug/Panther Vx.y.z.apk` |
 | Compile androidTest APK | `./gradlew :app:assembleDebugAndroidTest` | Proves the instrumented sources compile |
@@ -27,7 +28,8 @@ toolchain. Rules that require this document: `[DOC-04]` (Tier 2), `[VAL-08]`, `[
 CI shorthand — the exact command `ci.yml` uses:
 
 ```bash
-./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace
+./gradlew :app:testDebugUnitTest :app:jacocoDebugUnitTestReport :app:lintDebug \
+  :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace
 ```
 
 On Windows use `gradlew.bat`. Run everything from the repository root.
@@ -46,12 +48,13 @@ Unit tests (`app/src/test/java/com/panther/app/`) — 52 tests:
 | `domain/DurationCatalogTest.kt` | 18 | Duration parsing (Persian and ASCII digits), preset ordering/uniqueness, custom-value insertion, search by label/key/seconds |
 | `domain/BmiCalculatorTest.kt` | 9 | BMI guard rails (missing, non-finite, out-of-range), boundary acceptance, category thresholds, rounding |
 
-Instrumented tests (`app/src/androidTest/java/com/panther/app/`) — 11 tests:
+Instrumented tests (`app/src/androidTest/java/com/panther/app/`) — 13 tests:
 
 | File | Tests | Covers |
 |---|---|---|
 | `data/PantherDatabaseTest.kt` | 9 | Room schema, DAO behavior, ordering and cascade rules |
 | `MainActivityTest.kt` | 2 | Activity launch and basic navigation smoke test |
+| `feature/SettingsViewModelTest.kt` | 2 | Import validation rejects malformed JSON without touching data; an accepted restore writes `filesDir/pre-restore/backup-before-restore.json` and replaces the dataset |
 
 ## CI mapping
 
