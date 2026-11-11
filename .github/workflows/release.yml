@@ -64,6 +64,18 @@ jobs:
           echo "version_code=$((MAJOR * 10000 + MINOR * 100 + PATCH))" >> "$GITHUB_OUTPUT"
           echo "Tag $TAG is valid and verified as an ancestor of origin/main."
 
+      - name: Refuse to overwrite an existing release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.resolve.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error::Release $TAG already exists. A published version and its artifacts are immutable ([REL-01]); bump the version instead of re-publishing."
+            exit 1
+          fi
+          echo "No published release exists for $TAG yet."
+
   build-and-sign-release:
     name: Build and sign release APK
     needs: validate-tag

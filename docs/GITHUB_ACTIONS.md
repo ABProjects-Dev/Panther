@@ -43,6 +43,8 @@ and both workflows use `concurrency` groups and job-scoped least-privilege
   - Validates `vMAJOR.MINOR.PATCH` with `MINOR` and `PATCH` in `0..99` so
     `versionCode = MAJOR*10000 + MINOR*100 + PATCH` stays strictly monotonic.
   - Verifies the tag exists and is an ancestor of `origin/main`.
+  - Refuses to continue when a GitHub Release already exists for the tag, so a published
+    version and its artifacts cannot be overwritten.
 - **Exact tag checkout & quality gate (`build-and-sign-release`):**
   - Checks out `refs/tags/<tag>` explicitly (ensuring `workflow_dispatch` always
     builds the tagged commit rather than `HEAD` of the default branch).

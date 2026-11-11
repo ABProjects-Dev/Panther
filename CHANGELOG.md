@@ -11,12 +11,16 @@
 - `docs/decisions/ADR-0001-adopt-agent-operating-baseline.md` and
   `ADR-0002-defer-baseline-policy-conflicts.md`.
 - `CONTRIBUTING.md` — contribution workflow, change hygiene and documentation-language rules.
+- Unit coverage for previously untested pure logic: `DurationCatalogTest` (18 tests) and
+  `BmiCalculatorTest` (9 tests).
 
 ### Changed
 - Documentation now cites the operating baseline by stable rule ID (`[SEC-07]`, `[REL-03]`, …) instead
   of the removed `Rule N` / `section 19.1` numbering; 44 references across 13 files were repointed,
   historical entries below were left unchanged on purpose.
 - `README.md` gained a documentation index pointing at the new files.
+- Backup and PDF exports render into a cache file first and are copied into the chosen document
+  afterwards, so a failure during generation cannot leave a truncated file.
 
 ### Fixed
 - Readers following a documentation link no longer land on rule numbers that do not exist in
@@ -36,10 +40,10 @@
   (`app/src/main/assets/licenses/vazirmatn-OFL-1.1.txt`) and is referenced from `README.md`.
 - `.github/CODEOWNERS` and a `Protected file guard` workflow fail any pull request that modifies
   `AGENTS.md`.
-
-### Security
-- Nothing changed in the app. Note for the next release: `PD-001`–`PD-003` in `docs/PROJECT_STATUS.md`
-  must be decided before tagging.
+- `release.yml` refuses to publish when a GitHub Release already exists for the tag, keeping published
+  versions and their artifacts immutable.
+- Nothing changed in the app's runtime behaviour. Note for the next release: `PD-001`–`PD-003` in
+  `docs/PROJECT_STATUS.md` must be decided before tagging.
 
 ## [v1.1.0] - 2026-11-08
 

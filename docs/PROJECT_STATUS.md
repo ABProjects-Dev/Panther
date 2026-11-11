@@ -38,10 +38,10 @@ live in `AGENTS.project.md`.
    `CODEOWNERS` and the `protected-files.yml` guard are in place, branch protection is still
    **unverified** because the API returns `403` for the available token.
 4. Enable dependency-graph alerts, or record the decision to keep them disabled (`docs/REQUIREMENTS.md`).
-5. Audit follow-ups still open: tests for `SettingsViewModel`/`ProgramPdfExporter`/`SafeUriOutput`
-   plus coverage measurement, moving the Persian duration labels out of `Models.kt` into
-   `strings.xml`, partial-write protection on SAF exports, typed error screen for an invalid
-   `editor/{id}` route, and the staged dependency upgrade.
+5. Audit follow-ups still open: tests for `SettingsViewModel`/`ProgramPdfExporter`/`SafeUriOutput`,
+   coverage measurement (JaCoCo), moving the Persian duration labels out of `Models.kt` into
+   `strings.xml`, an error screen for an invalid `editor/{id}` route, Room schema cleanup, and the
+   staged dependency upgrade.
 
 ## Pending decisions
 
@@ -64,6 +64,8 @@ live in `AGENTS.project.md`.
 | `ci.yml` on a pull request | not triggered (no PR) | pending owner approval to push |
 | `protected-files.yml` guard logic | 2026-11-11 | reviewed by reading; not executed — no push/PR yet |
 | OFL text integrity | 2026-11-11 | fetched from `rastikerdar/vazirmatn` (`OFL.txt`) and stored verbatim; contains `SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007` |
+| unit test inventory | 2026-11-11 | 52 unit tests in 7 classes (27 new: `DurationCatalogTest`, `BmiCalculatorTest`); **not executed locally** — CI is the first execution |
+| `release.yml` duplicate-release guard | 2026-11-11 | added; not exercised until a tag is pushed |
 
 ## Handoff notes
 

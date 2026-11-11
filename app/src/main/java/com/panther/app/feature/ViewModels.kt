@@ -219,11 +219,7 @@ class SettingsViewModel @Inject constructor(
     fun exportBackup(uri: Uri) = runOperation(R.string.backup_exported) {
         val snapshot = repository.createBackup()
         val json = withContext(Dispatchers.IO) { PantherBackupJson.encode(snapshot) }
-        withContext(Dispatchers.IO) {
-            SafeUriOutput.openTruncated(context.contentResolver, uri)
-                .bufferedWriter(Charsets.UTF_8)
-                .use { it.write(json) }
-        }
+        writeAtomically(uri) { file -> file.writeText(json) }
     }
 
     fun validateImport(uri: Uri) {
@@ -288,10 +284,8 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val program = repository.createProgramBackup(programId) ?: error("Program not found")
-                withContext(Dispatchers.IO) {
-                    SafeUriOutput.openTruncated(context.contentResolver, uri).use { output ->
-                        ProgramPdfExporter.write(context, program, output)
-                    }
+                writeAtomically(uri) { file ->
+                    file.outputStream().use { output -> ProgramPdfExporter.write(context, program, output) }
                 }
                 _pdfMessage.value = R.string.pdf_exported
             } catch (e: Exception) {
@@ -299,6 +293,23 @@ class SettingsViewModel @Inject constructor(
                 logRecoverable("SettingsViewModel", e)
                 _pdfMessage.value = R.string.error_generic
             }
+        }
+    }
+
+    /**
+     * Renders the export into a cache file first and only then copies it into the document the user
+     * picked, so a failure while generating a PDF or encoding JSON cannot leave a truncated file at
+     * the destination ([SAFE-08]).
+     */
+    private suspend fun writeAtomically(uri: Uri, produce: (File) -> Unit) = withContext(Dispatchers.IO) {
+        val temp = File.createTempFile("panther-export", ".tmp", context.cacheDir)
+        try {
+            produce(temp)
+            SafeUriOutput.openTruncated(context.contentResolver, uri).use { output ->
+                temp.inputStream().use { input -> input.copyTo(output) }
+            }
+        } finally {
+            temp.delete()
         }
     }
 

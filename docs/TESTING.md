@@ -34,7 +34,7 @@ On Windows use `gradlew.bat`. Run everything from the repository root.
 
 ## What the suites cover
 
-Unit tests (`app/src/test/java/com/panther/app/`) — 25 tests:
+Unit tests (`app/src/test/java/com/panther/app/`) — 52 tests:
 
 | File | Tests | Covers |
 |---|---|---|
@@ -43,6 +43,8 @@ Unit tests (`app/src/test/java/com/panther/app/`) — 25 tests:
 | `domain/BackupLimitTest.kt` | 4 | Symmetric limits and boundary values |
 | `core/format/PantherDateFormatTest.kt` | 3 | Jalali date formatting |
 | `feature/ProgramsViewModelTest.kt` | 3 | Program-list view-model state |
+| `domain/DurationCatalogTest.kt` | 18 | Duration parsing (Persian and ASCII digits), preset ordering/uniqueness, custom-value insertion, search by label/key/seconds |
+| `domain/BmiCalculatorTest.kt` | 9 | BMI guard rails (missing, non-finite, out-of-range), boundary acceptance, category thresholds, rounding |
 
 Instrumented tests (`app/src/androidTest/java/com/panther/app/`) — 11 tests:
 
