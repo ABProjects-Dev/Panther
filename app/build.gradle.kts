@@ -32,7 +32,7 @@ val hasReleaseSigning = releaseStoreFilePath != null &&
     releaseKeyPassword != null
 
 // Version information can be overridden from CI so that the tag drives the release metadata.
-val applicationVersionName = (findProperty("releaseVersionName") as String?) ?: "0.1.0"
+val applicationVersionName = (findProperty("releaseVersionName") as String?) ?: "0.0.0-local"
 val applicationVersionCode = (findProperty("releaseVersionCode") as String?)?.toIntOrNull() ?: 1
 
 android {

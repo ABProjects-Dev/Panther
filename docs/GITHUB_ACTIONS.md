@@ -23,7 +23,7 @@ and both workflows use `concurrency` groups and job-scoped least-privilege
   annotations, and verifies `app/schemas` matches the committed Room schema
   baseline.
 - **Artifacts:**
-  - `panther-debug-apk` (`Panther V0.1.0.apk`, retention: `1` day)
+  - `panther-debug-apk` (`Panther V0.0.0-local.apk`, retention: `1` day)
   - `android-check-reports` (retention: `3` days)
   - `instrumentation-reports` (retention: `3` days)
 - **Instrumentation gating:** documentation-only pull requests skip `ci.yml`

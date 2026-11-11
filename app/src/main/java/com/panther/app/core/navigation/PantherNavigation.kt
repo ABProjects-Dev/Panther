@@ -18,10 +18,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.panther.app.R
 import com.panther.app.feature.HomeScreen
 import com.panther.app.feature.ProfileScreen
@@ -114,8 +116,11 @@ fun PantherNavigation(
                     onBack = { navController.popBackStack() },
                 )
             }
-            composable("editor/{id}") { backStack ->
-                val id = backStack.arguments?.getString("id")?.toLongOrNull()
+            composable(
+                route = "editor/{id}",
+                arguments = listOf(navArgument("id") { type = NavType.LongType }),
+            ) { backStack ->
+                val id = backStack.arguments?.getLong("id")
                 if (id != null) {
                     ProgramEditorScreen(
                         viewModel = programs,

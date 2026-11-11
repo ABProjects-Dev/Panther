@@ -29,10 +29,10 @@ class MainActivity : ComponentActivity() {
     private val settings: SettingsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
         // Required from targetSdk 35 onward: opt in to edge-to-edge and keep system bar icon
         // contrast synchronized with the user's selected in-app theme.
         enableEdgeToEdge()
-        super.onCreate(savedInstanceState)
         setContent {
             val choice by settings.theme.collectAsStateWithLifecycle()
             val dark = when (choice) {

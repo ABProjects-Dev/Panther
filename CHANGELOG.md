@@ -21,6 +21,21 @@
 ### Fixed
 - Readers following a documentation link no longer land on rule numbers that do not exist in
   `AGENTS.md` (documentation-only defect, no app behaviour change).
+- Restoring a backup now writes a best-effort snapshot of the current data to
+  `filesDir/pre-restore/backup-before-restore.json` first, so an accidental restore can still be
+  undone. The snapshot never blocks a restore the user confirmed.
+- Debug builds report `0.0.0-local` instead of `0.1.0`, so a local APK can no longer be mistaken for
+  a released version.
+
+### Removed
+- `app/src/main/res/values-fa/strings.xml` — byte-identical duplicate of `values/strings.xml`; one
+  resource set is now the single source of UI text.
+
+### Security
+- The Vazirmatn SIL OFL 1.1 text now ships inside the APK
+  (`app/src/main/assets/licenses/vazirmatn-OFL-1.1.txt`) and is referenced from `README.md`.
+- `.github/CODEOWNERS` and a `Protected file guard` workflow fail any pull request that modifies
+  `AGENTS.md`.
 
 ### Security
 - Nothing changed in the app. Note for the next release: `PD-001`–`PD-003` in `docs/PROJECT_STATUS.md`

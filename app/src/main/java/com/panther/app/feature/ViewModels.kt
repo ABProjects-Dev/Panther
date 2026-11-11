@@ -250,10 +250,26 @@ class SettingsViewModel @Inject constructor(
 
     fun cancelImport() { _pendingBackup.value = null }
 
+    /**
+     * Best-effort snapshot of the current data, written before a restore replaces it so that an
+     * accidental restore can still be undone manually from `filesDir/pre-restore`. A failure here
+     * is logged and must never block the restore the user explicitly confirmed.
+     */
+    private suspend fun writePreRestoreSnapshot() {
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val snapshot = PantherBackupJson.encode(repository.createBackup())
+                val directory = File(context.filesDir, "pre-restore").apply { mkdirs() }
+                File(directory, "backup-before-restore.json").writeText(snapshot)
+            }.onFailure { logRecoverable("SettingsViewModel", it) }
+        }
+    }
+
     fun restorePendingBackup() {
         val backup = _pendingBackup.value ?: return
         viewModelScope.launch {
             try {
+                writePreRestoreSnapshot()
                 repository.restoreBackup(backup)
                 _pendingBackup.value = null
                 removeLegacyProfileImages(context)

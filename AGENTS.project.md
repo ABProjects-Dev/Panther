@@ -71,6 +71,8 @@ Requires JDK 17 and Android SDK 36. Details, test inventory and known limitation
   with its migration and test (`[DATA-03]`, `[MOB-05]`).
 - **MUST** keep the app permission-free (`AndroidManifest.xml` declares no `<uses-permission>`); adding
   one is a product decision that needs owner approval (`[SEC-02]`).
+- **MUST** keep `AGENTS.md` byte-identical in any pull request; the guard workflow and `CODEOWNERS`
+  enforce it, and only the owner edits that file on `main` (`[PROT-01]`, `[PROT-06]`).
 - **MUST** keep every third-party dependency and action pinned — actions by immutable commit SHA, as
   `ci.yml` and `release.yml` do (`[CI-01]`, `[DEP-02]`).
 - **MUST** stop and wait for owner approval when `ci.yml` is green on a release pull request
@@ -86,7 +88,8 @@ Requires JDK 17 and Android SDK 36. Details, test inventory and known limitation
 | `app/src/androidTest/java/` | Instrumented tests (emulator) |
 | `app/schemas/` | Committed Room schema baseline (`1.json`) |
 | `docs/` | Architecture, requirements, plan, status, testing, API, release, secrets, decisions |
-| `.github/workflows/` | `ci.yml`, `release.yml` |
+| `.github/workflows/` | `ci.yml`, `release.yml`, and `protected-files.yml` (fails a pull request that touches `AGENTS.md`) |
+| `app/src/main/assets/licenses/` | Verbatim third-party licence texts shipped inside the APK |
 | `.github/README.md` | Persian README shown on the GitHub repository page |
 
 ## Off-limits without approval

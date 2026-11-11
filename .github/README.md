@@ -64,7 +64,7 @@ app/src/main/java/com/panther/app/
 
 <div dir="rtl">
 
-در ویندوز از `gradlew.bat` استفاده کنید؛ همچنین می‌توانید پوشهٔ ریشهٔ پروژه را در Android Studio باز کرده، Gradle را همگام‌سازی و برنامه را مستقیماً روی دستگاه اجرا کنید. فایل‌های خروجی APK از الگوی نام‌گذاری استاندارد `Panther Vx.y.z.apk` پیروی می‌کنند (برای نمونه `app/build/outputs/apk/debug/Panther V0.1.0.apk` در ساخت محلی Debug و `app/build/outputs/apk/release/Panther Vx.y.z.apk` در انتشارهای رسمی).
+در ویندوز از `gradlew.bat` استفاده کنید؛ همچنین می‌توانید پوشهٔ ریشهٔ پروژه را در Android Studio باز کرده، Gradle را همگام‌سازی و برنامه را مستقیماً روی دستگاه اجرا کنید. فایل‌های خروجی APK از الگوی نام‌گذاری استاندارد `Panther Vx.y.z.apk` پیروی می‌کنند (برای نمونه `app/build/outputs/apk/debug/Panther V0.0.0-local.apk` در ساخت محلی Debug و `app/build/outputs/apk/release/Panther Vx.y.z.apk` در انتشارهای رسمی).
 
 ## وضعیت فعلی محصول
 
@@ -84,5 +84,7 @@ app/src/main/java/com/panther/app/
 ## مجوز و امنیت
 
 تحت مجوز MIT منتشر شده است — فایل [LICENSE](../LICENSE) را ببینید. سیاست امنیتی پروژه در [SECURITY.md](../SECURITY.md) مستند شده است.
+
+**اجزای شخص ثالث:** خانوادهٔ فونت **وزیرمتن** تحت مجوز SIL Open Font License 1.1 منتشر می‌شود. متن کامل مجوز همراه برنامه توزیع می‌شود (`app/src/main/assets/licenses/vazirmatn-OFL-1.1.txt`) و برگرفته از مخزن اصلی پروژهٔ وزیرمتن است.
 
 </div>

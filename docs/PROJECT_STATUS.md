@@ -21,23 +21,27 @@ live in `AGENTS.project.md`.
 
 | item | owner | expected | blocker |
 |---|---|---|---|
-| Documentation alignment with baseline 1.0.0 (this change set) | agent session | awaiting owner review | needs approval to push/PR |
+| Audit remediation set 1: font licence, protected-file guard, restore snapshot, doc fixes | agent session | awaiting owner review | needs approval to push/PR |
 
 ## Confirmed defects
 
 | id | symptom | priority | since |
 |---|---|---|---|
-| D-01 | Bundled Vazirmatn fonts ship without the SIL OFL licence text or attribution anywhere in the repository (`res/font/*.ttf` with no licence file) — a redistribution-compliance gap, not a runtime bug | P2 | `v1.1.0` |
+| D-01 | ~~Bundled Vazirmatn fonts shipped without the SIL OFL licence~~ — **fixed 2026-11-11**: the upstream OFL 1.1 text now ships inside the APK at `app/src/main/assets/licenses/vazirmatn-OFL-1.1.txt` and is referenced from `README.md`. Note: `v1.0.0`/`v1.1.0` artifacts published earlier still lack it | P1 | `v1.1.0` |
 | D-02 | Documentation pointed at rule numbers (`Rule N`, `section 19.1`) that no longer exist in `AGENTS.md` — 45 references across 13 files. Fixed by this change set: 44 repointed to rule IDs or `AGENTS.project.md`; the one inside the `v1.1.0` changelog entry is kept as history | P2 | since `V1.1.0` adoption (`4867f70`) |
 
 ## Next tasks
 
 1. Resolve `PD-001`–`PD-003` (below); no release may be tagged until they are decided.
-2. On owner approval, push this documentation change set and open a pull request if requested.
-3. Protect `main` and add a CI guard that fails when `AGENTS.md` changes (`[PROT-06]`); branch-protection
-   state is currently **unverified** — the API call returned `403` for the available token.
-4. Add the Vazirmatn OFL licence file (`D-01`).
-5. Enable dependency-graph alerts, or record the decision to keep them disabled (`docs/REQUIREMENTS.md`).
+2. On owner approval, push the current change set and open a pull request if requested.
+3. Turn on branch protection for `main` in repository settings — the remaining half of `[PROT-06]`;
+   `CODEOWNERS` and the `protected-files.yml` guard are in place, branch protection is still
+   **unverified** because the API returns `403` for the available token.
+4. Enable dependency-graph alerts, or record the decision to keep them disabled (`docs/REQUIREMENTS.md`).
+5. Audit follow-ups still open: tests for `SettingsViewModel`/`ProgramPdfExporter`/`SafeUriOutput`
+   plus coverage measurement, moving the Persian duration labels out of `Models.kt` into
+   `strings.xml`, partial-write protection on SAF exports, typed error screen for an invalid
+   `editor/{id}` route, and the staged dependency upgrade.
 
 ## Pending decisions
 
@@ -58,6 +62,8 @@ live in `AGENTS.project.md`.
 | `./gradlew :app:lintDebug` | never in this environment | **not run** — same reason |
 | `./gradlew :app:connectedDebugAndroidTest` | never in this environment | **not run** — needs an emulator |
 | `ci.yml` on a pull request | not triggered (no PR) | pending owner approval to push |
+| `protected-files.yml` guard logic | 2026-11-11 | reviewed by reading; not executed — no push/PR yet |
+| OFL text integrity | 2026-11-11 | fetched from `rastikerdar/vazirmatn` (`OFL.txt`) and stored verbatim; contains `SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007` |
 
 ## Handoff notes
 
