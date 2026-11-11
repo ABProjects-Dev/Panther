@@ -18,6 +18,8 @@
   exports write a decodable JSON document and a real PDF into a `content://` destination.
 - `EditorAvailabilityTest` (5 unit tests) and `ProgramNotFoundScreenTest` (instrumented) covering
   the `editor/{id}` route resolution.
+- Explicit `androidx.test:runner` (1.6.2) test dependency, which provides the `SdkSuppress` gate the
+  API-level-specific export tests need.
 - JaCoCo coverage for the debug unit tests (`./gradlew :app:jacocoDebugUnitTestReport`); `ci.yml`
   runs it and archives the HTML/XML report with the other check reports.
 

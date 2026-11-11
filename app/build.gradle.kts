@@ -120,6 +120,9 @@ dependencies {
 
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.test.ext.junit)
+    // Supplies `androidx.test.filters.SdkSuppress`, the API-level gate Lint requires on tests,
+    // and the runner named by `testInstrumentationRunner`.
+    androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(libs.kotlinx.coroutines.test)
