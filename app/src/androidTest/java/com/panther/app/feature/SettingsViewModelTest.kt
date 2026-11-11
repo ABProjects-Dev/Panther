@@ -16,6 +16,7 @@ import com.panther.app.data.local.PantherDatabase
 import com.panther.app.data.repository.RoomPantherRepository
 import com.panther.app.domain.model.DayBackup
 import com.panther.app.domain.model.ExerciseBackup
+import com.panther.app.domain.model.ExerciseSet
 import com.panther.app.domain.model.PantherBackup
 import com.panther.app.domain.model.ProgramBackup
 import com.panther.app.domain.model.SetBackup
