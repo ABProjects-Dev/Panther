@@ -12,9 +12,9 @@ baseline wins until the owner decides (`[PREC-02]`).
 |---|---|---|
 | Language / runtime | Kotlin, JVM target 17 | 2.0.21 |
 | Build | Gradle wrapper, Android Gradle Plugin | 9.8.2 / 8.10.1 |
-| UI | Jetpack Compose (BOM), Material 3, Navigation Compose | 2024.12.01 / 2.8.5 |
+| UI | Jetpack Compose (BOM), Material 3, Navigation Compose | 2024.12.01 / 2.8.9 |
 | DI / codegen | Hilt, KSP | 2.52 / 2.0.21-1.0.28 |
-| Persistence | Room, DataStore | 2.6.1 / 1.1.1 |
+| Persistence | Room, DataStore | 2.6.1 / 1.1.7 |
 | SDK levels | `compileSdk` / `targetSdk` / `minSdk` | 36 / 36 / 26 |
 | Application ID | `com.panther.app` — changing it needs owner approval (`[APPR-04]`) | — |
 | Platform | Android only; offline-first; **no runtime permissions declared** | — |

@@ -24,6 +24,9 @@
   runs it and archives the HTML/XML report with the other check reports.
 
 ### Changed
+- Runtime dependencies refreshed: AndroidX core 1.16.0, activity 1.10.1, navigation 2.8.9,
+  kotlinx-coroutines 1.10.2, DataStore 1.1.7 and org.json 20250107. The build toolchain (Kotlin, AGP,
+  KSP, Compose BOM, Hilt, Room) is unchanged.
 - Documentation now cites the operating baseline by stable rule ID (`[SEC-07]`, `[REL-03]`, …) instead
   of the removed `Rule N` / `section 19.1` numbering; 44 references across 13 files were repointed,
   historical entries below were left unchanged on purpose.

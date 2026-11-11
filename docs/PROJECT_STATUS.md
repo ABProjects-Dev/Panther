@@ -43,9 +43,11 @@ live in `AGENTS.project.md`.
      version-2 schema plus a `2.json` export, and Room computes that file's identity hash during
      a Gradle/KSP build. Hand-writing it would ship an unverifiable schema, so it requires a
      machine with the Android SDK.
-   - The staged dependency upgrade (`L-13`) is equally blocked: without a JDK/Android SDK in the
-     agent sandbox, and with workflow logs unavailable to this session, a version bump cannot be
-     compiled or diagnosed here.
+   - The staged dependency upgrade (`L-13`) is half done: the runtime libraries were refreshed
+     (core 1.16.0, activity 1.10.1, navigation 2.8.9, coroutines 1.10.2, DataStore 1.1.7, org.json
+     20250107). The toolchain itself (Kotlin 2.0.21, AGP 8.10.1, KSP, Compose BOM 2024.12.01, Hilt
+     2.52, Room 2.6.1) still needs a machine with a JDK and the Android SDK: a compiler or Room
+     schema change cannot be built — let alone diagnosed — in this sandbox.
    Automated coverage of the SAF write path is **done**: `SettingsViewModelTest` now exports a
    backup and a PDF into a real `content://` Downloads document, and the `editor/{id}` route has an
    explicit "not found" screen. Coverage is measured with JaCoCo (`jacocoDebugUnitTestReport`) and
