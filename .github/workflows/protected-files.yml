@@ -1,0 +1,36 @@
+name: Protected file guard
+
+# Runs on every pull request (no paths-ignore), so a change to AGENTS.md cannot slip past
+# CI: the normal CI workflow deliberately skips documentation-only pull requests.
+# The maintainer edits AGENTS.md directly on the default branch; this guard only constrains
+# pull requests.
+
+on:
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: guard-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  agents-md-unchanged:
+    name: AGENTS.md unchanged
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - name: Fail when AGENTS.md differs from the base branch
+        run: |
+          set -euo pipefail
+          base="origin/${{ github.base_ref }}"
+          if git diff --name-only "$base...HEAD" | grep -qx 'AGENTS.md'; then
+            echo "::error file=AGENTS.md::AGENTS.md is protected and read-only for agents ([PROT-01]). Revert this change; only the maintainer edits it on the default branch."
+            exit 1
+          fi
+          echo "AGENTS.md is unchanged."

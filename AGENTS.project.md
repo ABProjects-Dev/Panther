@@ -12,9 +12,9 @@ baseline wins until the owner decides (`[PREC-02]`).
 |---|---|---|
 | Language / runtime | Kotlin, JVM target 17 | 2.0.21 |
 | Build | Gradle wrapper, Android Gradle Plugin | 9.8.2 / 8.10.1 |
-| UI | Jetpack Compose (BOM), Material 3, Navigation Compose | 2024.12.01 / 2.8.5 |
+| UI | Jetpack Compose (BOM), Material 3, Navigation Compose | 2024.12.01 / 2.8.9 |
 | DI / codegen | Hilt, KSP | 2.52 / 2.0.21-1.0.28 |
-| Persistence | Room, DataStore | 2.6.1 / 1.1.1 |
+| Persistence | Room, DataStore | 2.6.1 / 1.1.7 |
 | SDK levels | `compileSdk` / `targetSdk` / `minSdk` | 36 / 36 / 26 |
 | Application ID | `com.panther.app` — changing it needs owner approval (`[APPR-04]`) | — |
 | Platform | Android only; offline-first; **no runtime permissions declared** | — |
@@ -26,6 +26,7 @@ baseline wins until the owner decides (`[PREC-02]`).
 |---|---|
 | Debug build | `./gradlew :app:assembleDebug` |
 | Unit tests | `./gradlew :app:testDebugUnitTest` |
+| Unit-test coverage | `./gradlew :app:jacocoDebugUnitTestReport` |
 | Android Lint | `./gradlew :app:lintDebug` |
 | Instrumented tests | `./gradlew :app:connectedDebugAndroidTest` (emulator, API 29) |
 | Android-test APK only | `./gradlew :app:assembleDebugAndroidTest` |
@@ -71,6 +72,8 @@ Requires JDK 17 and Android SDK 36. Details, test inventory and known limitation
   with its migration and test (`[DATA-03]`, `[MOB-05]`).
 - **MUST** keep the app permission-free (`AndroidManifest.xml` declares no `<uses-permission>`); adding
   one is a product decision that needs owner approval (`[SEC-02]`).
+- **MUST** keep `AGENTS.md` byte-identical in any pull request; the guard workflow and `CODEOWNERS`
+  enforce it, and only the owner edits that file on `main` (`[PROT-01]`, `[PROT-06]`).
 - **MUST** keep every third-party dependency and action pinned — actions by immutable commit SHA, as
   `ci.yml` and `release.yml` do (`[CI-01]`, `[DEP-02]`).
 - **MUST** stop and wait for owner approval when `ci.yml` is green on a release pull request
@@ -86,7 +89,8 @@ Requires JDK 17 and Android SDK 36. Details, test inventory and known limitation
 | `app/src/androidTest/java/` | Instrumented tests (emulator) |
 | `app/schemas/` | Committed Room schema baseline (`1.json`) |
 | `docs/` | Architecture, requirements, plan, status, testing, API, release, secrets, decisions |
-| `.github/workflows/` | `ci.yml`, `release.yml` |
+| `.github/workflows/` | `ci.yml`, `release.yml`, and `protected-files.yml` (fails a pull request that touches `AGENTS.md`) |
+| `app/src/main/assets/licenses/` | Verbatim third-party licence texts shipped inside the APK |
 | `.github/README.md` | Persian README shown on the GitHub repository page |
 
 ## Off-limits without approval

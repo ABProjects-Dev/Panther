@@ -18,12 +18,15 @@ and both workflows use `concurrency` groups and job-scoped least-privilege
   requests do **not** start a run.
 - **Jobs:** `lint-and-unit-tests` → `instrumentation-tests`.
   `lint-and-unit-tests` runs
-  `./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace`,
+  `./gradlew :app:testDebugUnitTest :app:jacocoDebugUnitTestReport :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace`,
+  which also produces the JaCoCo coverage report archived in the `android-check-reports` artifact,
+  and a failed build repeats its diagnostic lines as `::error::` annotations (the raw job log lives
+  on a separate service that not every client can read).
   publishes JUnit and Android Lint counts to `$GITHUB_STEP_SUMMARY` and check
   annotations, and verifies `app/schemas` matches the committed Room schema
   baseline.
 - **Artifacts:**
-  - `panther-debug-apk` (`Panther V0.1.0.apk`, retention: `1` day)
+  - `panther-debug-apk` (`Panther V0.0.0-local.apk`, retention: `1` day)
   - `android-check-reports` (retention: `3` days)
   - `instrumentation-reports` (retention: `3` days)
 - **Instrumentation gating:** documentation-only pull requests skip `ci.yml`
@@ -43,6 +46,8 @@ and both workflows use `concurrency` groups and job-scoped least-privilege
   - Validates `vMAJOR.MINOR.PATCH` with `MINOR` and `PATCH` in `0..99` so
     `versionCode = MAJOR*10000 + MINOR*100 + PATCH` stays strictly monotonic.
   - Verifies the tag exists and is an ancestor of `origin/main`.
+  - Refuses to continue when a GitHub Release already exists for the tag, so a published
+    version and its artifacts cannot be overwritten.
 - **Exact tag checkout & quality gate (`build-and-sign-release`):**
   - Checks out `refs/tags/<tag>` explicitly (ensuring `workflow_dispatch` always
     builds the tagged commit rather than `HEAD` of the default branch).

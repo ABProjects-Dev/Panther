@@ -1,0 +1,10 @@
+# Owners for protected and security-sensitive paths.
+#
+# AGENTS.md is the protected agent baseline: it is read-only for agents and only the
+# maintainer edits it, directly on the default branch ([PROT-01], [PROT-06]).
+# Workflows and signing-related configuration change only with an explicit owner review.
+
+/AGENTS.md                 @ABProjects-Dev
+/.github/workflows/        @ABProjects-Dev
+/app/build.gradle.kts      @ABProjects-Dev
+/.github/CODEOWNERS        @ABProjects-Dev

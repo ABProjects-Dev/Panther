@@ -44,6 +44,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -52,6 +53,8 @@ import com.panther.app.core.designsystem.components.*
 import com.panther.app.core.designsystem.theme.LocalPantherColors
 import com.panther.app.core.designsystem.theme.PantherSpacing
 import com.panther.app.core.format.PantherDateFormat
+import com.panther.app.core.format.durationLabel
+import com.panther.app.core.format.durationLabelResolver
 import com.panther.app.domain.model.*
 import java.util.ArrayList
 import kotlinx.coroutines.delay
@@ -81,6 +84,15 @@ fun ProgramEditorScreen(
     val vmError by viewModel.error.collectAsStateWithLifecycle()
     val pdfMessage by settings.pdfMessage.collectAsStateWithLifecycle()
     val program = programsState.value.firstOrNull { it.id == programId }
+
+    // `editor/{id}` can outlive the program it points at (deleted from another screen, a stale
+    // deep link, or a malformed id). Show an explicit message instead of an empty editor whose
+    // actions would all target a row that does not exist.
+    if (editorAvailability(programsState, programId) == EditorAvailability.MISSING) {
+        ProgramNotFoundScreen(onBack = onBack)
+        return
+    }
+
     val activeColors = LocalPantherColors.current
 
     val pdfLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
@@ -176,11 +188,9 @@ fun ProgramEditorScreen(
         }
 
         if (program == null) {
-            if (!programsState.loading) {
-                Text(stringResource(R.string.program_not_found), color = MaterialTheme.colorScheme.error)
-            } else {
-                Text(stringResource(R.string.loading))
-            }
+            // Only the first, still-loading emission reaches this point; a program that is really
+            // gone is a terminal state rendered by `ProgramNotFoundScreen` above.
+            Text(stringResource(R.string.loading))
             return@Column
         }
 
@@ -1215,6 +1225,7 @@ private fun DurationSearchableSelectField(
     onToggleExpanded: () -> Unit,
 ) {
     val selectedOption = remember(selectedRaw) { DurationCatalog.parse(selectedRaw) }
+    val context = LocalContext.current
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -1240,7 +1251,8 @@ private fun DurationSearchableSelectField(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = selectedOption?.displayLabel ?: PantherDateFormat.persianDigits(selectedRaw),
+                    text = selectedOption?.let { durationLabel(context, it) }
+                        ?: PantherDateFormat.persianDigits(selectedRaw),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                 )
@@ -1262,9 +1274,11 @@ private fun DurationSearchablePickerDialog(
     onSelectOption: (DurationOption) -> Unit,
 ) {
     var searchQuery by rememberSaveable { mutableStateOf("") }
+    val context = LocalContext.current
+    val labelOf = remember(context) { durationLabelResolver(context) }
     val selectedOption = remember(selectedRaw) { DurationCatalog.parse(selectedRaw) }
-    val filteredOptions = remember(searchQuery, selectedRaw) {
-        DurationCatalog.search(searchQuery, extraRaw = selectedRaw)
+    val filteredOptions = remember(searchQuery, selectedRaw, labelOf) {
+        DurationCatalog.search(searchQuery, extraRaw = selectedRaw, labelOf = labelOf)
     }
 
     AlertDialog(
@@ -1329,7 +1343,7 @@ private fun DurationSearchablePickerDialog(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
-                                    text = option.displayLabel,
+                                    text = labelOf(option),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                     color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
@@ -1356,4 +1370,30 @@ private fun DurationSearchablePickerDialog(
             }
         },
     )
+}
+
+/** Terminal state for `editor/{id}` when the program behind the id does not exist. */
+@Composable
+fun ProgramNotFoundScreen(onBack: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = PantherSpacing.medium, vertical = PantherSpacing.small),
+        verticalArrangement = Arrangement.spacedBy(PantherSpacing.compact),
+    ) {
+        TextButton(onClick = onBack) {
+            Text(stringResource(R.string.back))
+        }
+        PantherCard {
+            Text(
+                text = stringResource(R.string.program_not_found),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Text(
+                text = stringResource(R.string.program_not_found_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }

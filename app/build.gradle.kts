@@ -1,5 +1,7 @@
 import com.android.build.gradle.internal.api.BaseVariantOutputImpl
 import java.util.Properties
+import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
+import org.gradle.testing.jacoco.tasks.JacocoReport
 
 plugins {
     alias(libs.plugins.android.application)
@@ -7,6 +9,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    jacoco
 }
 
 // Release signing material is supplied at build time via environment variables in CI
@@ -32,7 +35,7 @@ val hasReleaseSigning = releaseStoreFilePath != null &&
     releaseKeyPassword != null
 
 // Version information can be overridden from CI so that the tag drives the release metadata.
-val applicationVersionName = (findProperty("releaseVersionName") as String?) ?: "0.1.0"
+val applicationVersionName = (findProperty("releaseVersionName") as String?) ?: "0.0.0-local"
 val applicationVersionCode = (findProperty("releaseVersionCode") as String?)?.toIntOrNull() ?: 1
 
 android {
@@ -117,9 +120,64 @@ dependencies {
 
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.test.ext.junit)
+    // Supplies `androidx.test.filters.SdkSuppress`, the API-level gate Lint requires on tests,
+    // and the runner named by `testInstrumentationRunner`.
+    androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(libs.kotlinx.coroutines.test)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+}
+
+// Unit-test coverage. The JVM test tasks only produce coverage data because the core `jacoco`
+// plugin attaches its agent to every Gradle `Test` task; AGP's own coverage flag is intentionally
+// left off so the agent is not added twice. Run `./gradlew :app:jacocoDebugUnitTestReport` and open
+// app/build/reports/jacoco/jacocoDebugUnitTestReport/html/index.html.
+jacoco {
+    toolVersion = "0.8.12"
+}
+
+tasks.withType<Test>().configureEach {
+    extensions.configure(JacocoTaskExtension::class.java) {
+        isIncludeNoLocationClasses = true
+        excludes = listOf("jdk.internal.*")
+    }
+}
+
+tasks.register<JacocoReport>("jacocoDebugUnitTestReport") {
+    group = "verification"
+    description = "Generates the JaCoCo HTML/XML coverage report for the debug unit tests."
+    dependsOn("testDebugUnitTest")
+
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+        csv.required.set(false)
+    }
+
+    val classExcludes = listOf(
+        "**/R.class",
+        "**/R$*.class",
+        "**/BuildConfig.*",
+        "**/Manifest*.*",
+        "**/*_Factory.class",
+        "**/*_HiltComponents*.class",
+        "**/Hilt_*.class",
+        "**/*_Impl*.class",
+        "**/dagger/**",
+    )
+
+    classDirectories.setFrom(
+        fileTree(layout.buildDirectory.dir("tmp/kotlin-classes/debug")) {
+            exclude(classExcludes)
+        }
+    )
+    sourceDirectories.setFrom(files("src/main/java"))
+    executionData.setFrom(
+        fileTree(layout.buildDirectory) {
+            include("jacoco/testDebugUnitTest.exec")
+            include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
+        }
+    )
 }

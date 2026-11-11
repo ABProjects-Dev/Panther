@@ -6,7 +6,10 @@ This document provides technical details for the Panther Android application API
 ## Domain Models
 - **UserProfile**: Name, age, height (cm), weight (kg).
 - **BmiCalculator / BmiResult**: Calculates BMI and classifies into `UNDERWEIGHT`, `NORMAL`, `OVERWEIGHT`, or `OBESE`.
-- **DurationCatalog / DurationOption**: Preset and custom `mm:ss` durations with Persian/ASCII searchable filtering.
+- **DurationCatalog / DurationOption**: Preset and custom `mm:ss` durations. `DurationOption` is data only
+  (`minutes`, `seconds`, `key`, `totalSeconds`); the localized label is produced by
+  `core/format/DurationLabels.kt` from `strings.xml`, and `DurationCatalog.search` accepts an optional
+  `labelOf` resolver so the wording participates in matching without living in the domain layer.
 - **WorkoutProgram**: ID, name, creation timestamp, active status, day count, exercise count.
 - **TrainingDay**: ID, program ID, name, dense `sortOrder`.
 - **Exercise / ExerciseSet / ExerciseWithSets**: Exercise metadata paired with ordered per-set repetition or duration targets.

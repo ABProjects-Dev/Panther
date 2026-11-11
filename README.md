@@ -54,7 +54,7 @@ From the repository root:
 ./gradlew :app:installDebug               # requires a connected device or emulator
 ```
 
-On Windows use `gradlew.bat`. Alternatively open the root directory in Android Studio, sync Gradle, select the app configuration, and run it on a device. Generated APKs follow the `Panther Vx.y.z.apk` naming convention (for example, `app/build/outputs/apk/debug/Panther V0.1.0.apk` for local debug builds and `app/build/outputs/apk/release/Panther Vx.y.z.apk` for tagged releases).
+On Windows use `gradlew.bat`. Alternatively open the root directory in Android Studio, sync Gradle, select the app configuration, and run it on a device. Generated APKs follow the `Panther Vx.y.z.apk` naming convention (for example, `app/build/outputs/apk/debug/Panther V0.0.0-local.apk` for a local debug build, and `app/build/outputs/apk/release/Panther Vx.y.z.apk` for tagged releases).
 
 ## Current status
 
@@ -87,3 +87,9 @@ See [docs/GITHUB_ACTIONS.md](docs/GITHUB_ACTIONS.md) for the authoritative descr
 ## License
 
 MIT — see [LICENSE](LICENSE). Security policy: [SECURITY.md](SECURITY.md).
+
+Bundled third-party components:
+
+- **Vazirmatn** font family — SIL Open Font License 1.1. The full licence text ships with the
+  application at `app/src/main/assets/licenses/vazirmatn-OFL-1.1.txt` and is reproduced from the
+  upstream project (https://github.com/rastikerdar/vazirmatn).

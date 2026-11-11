@@ -11,20 +11,57 @@
 - `docs/decisions/ADR-0001-adopt-agent-operating-baseline.md` and
   `ADR-0002-defer-baseline-policy-conflicts.md`.
 - `CONTRIBUTING.md` — contribution workflow, change hygiene and documentation-language rules.
+- Unit coverage for previously untested pure logic: `DurationCatalogTest` (18 tests) and
+  `BmiCalculatorTest` (9 tests).
+- `SettingsViewModelTest` (instrumented, 4 tests): a malformed import is rejected without touching
+  existing data, a confirmed restore writes the pre-restore snapshot before replacing it, and both
+  exports write a decodable JSON document and a real PDF into a `content://` destination.
+- `EditorAvailabilityTest` (5 unit tests) and `ProgramNotFoundScreenTest` (instrumented) covering
+  the `editor/{id}` route resolution.
+- Explicit `androidx.test:runner` (1.6.2) test dependency, which provides the `SdkSuppress` gate the
+  API-level-specific export tests need.
+- JaCoCo coverage for the debug unit tests (`./gradlew :app:jacocoDebugUnitTestReport`); `ci.yml`
+  runs it and archives the HTML/XML report with the other check reports.
 
 ### Changed
+- Runtime dependencies refreshed: AndroidX core 1.16.0, activity 1.10.1, navigation 2.8.9,
+  kotlinx-coroutines 1.10.2, DataStore 1.1.7 and org.json 20250107. The build toolchain (Kotlin, AGP,
+  KSP, Compose BOM, Hilt, Room) is unchanged.
 - Documentation now cites the operating baseline by stable rule ID (`[SEC-07]`, `[REL-03]`, …) instead
   of the removed `Rule N` / `section 19.1` numbering; 44 references across 13 files were repointed,
   historical entries below were left unchanged on purpose.
 - `README.md` gained a documentation index pointing at the new files.
+- Backup and PDF exports render into a cache file first and are copied into the chosen document
+  afterwards, so a failure during generation cannot leave a truncated file.
+- Duration labels ("۳۰ ثانیه (۰۰:۳۰)") are now built from `strings.xml` in the UI layer; the domain
+  model carries data only and `DurationCatalog.search` takes an optional label resolver, so no
+  user-facing Persian text lives in the domain anymore ([UI-03]).
 
 ### Fixed
+- Opening `editor/{id}` for a program that no longer exists (deleted elsewhere, stale link, or a
+  malformed argument that falls back to `0`) now shows a dedicated "برنامه پیدا نشد" screen with a
+  working back action instead of an empty editor whose actions targeted a missing row.
 - Readers following a documentation link no longer land on rule numbers that do not exist in
   `AGENTS.md` (documentation-only defect, no app behaviour change).
+- Restoring a backup now writes a best-effort snapshot of the current data to
+  `filesDir/pre-restore/backup-before-restore.json` first, so an accidental restore can still be
+  undone. The snapshot never blocks a restore the user confirmed.
+- Debug builds report `0.0.0-local` instead of `0.1.0`, so a local APK can no longer be mistaken for
+  a released version.
+
+### Removed
+- `app/src/main/res/values-fa/strings.xml` — byte-identical duplicate of `values/strings.xml`; one
+  resource set is now the single source of UI text.
 
 ### Security
-- Nothing changed in the app. Note for the next release: `PD-001`–`PD-003` in `docs/PROJECT_STATUS.md`
-  must be decided before tagging.
+- The Vazirmatn SIL OFL 1.1 text now ships inside the APK
+  (`app/src/main/assets/licenses/vazirmatn-OFL-1.1.txt`) and is referenced from `README.md`.
+- `.github/CODEOWNERS` and a `Protected file guard` workflow fail any pull request that modifies
+  `AGENTS.md`.
+- `release.yml` refuses to publish when a GitHub Release already exists for the tag, keeping published
+  versions and their artifacts immutable.
+- Nothing changed in the app's runtime behaviour. Note for the next release: `PD-001`–`PD-003` in
+  `docs/PROJECT_STATUS.md` must be decided before tagging.
 
 ## [v1.1.0] - 2026-11-08
 

@@ -7,7 +7,7 @@ Releases are managed via GitHub Actions (`release.yml`) and tagged with Semantic
 - **Date**: 2026-11-08
 - **Tag**: `v1.1.0` (annotated in Persian)
 - **Workflow Artifact**: `panther-official-release-v1.1.0`
-- **Release Assets**: `Panther V1.1.0.apk` (`1,788,609` bytes) and `Panther V1.1.0.apk.sha256` (`85` bytes)
+- **Release Assets**: built as `Panther V1.1.0.apk` (`1,788,609` bytes) and `Panther V1.1.0.apk.sha256` (`85` bytes); GitHub serves them as `Panther.V1.1.0.apk` and `Panther.V1.1.0.apk.sha256` because it replaces spaces with dots in uploaded asset names
 - **Notes**: Complete RTL UI/UX redesign with bundled Vazirmatn typography, Jalali calendar dates, read-only active-program Home dashboard with BMI calculation, reorderable tabbed training days, drag-and-drop exercise ordering with TalkBack actions, searchable duration picker, Room data/backup integrity hardening, SAF fallback, single-program PDF export refinements, and hardened CI/release automation.
 - **Signature**: Signed and verified with `apksigner` (APK Signature Scheme v2/v3) in `release.yml` via GitHub Secrets (`[SEC-07]`).
 - **Status**: Published directly on GitHub Releases (`draft: false`).

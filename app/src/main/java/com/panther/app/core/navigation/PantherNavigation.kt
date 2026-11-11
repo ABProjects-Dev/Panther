@@ -18,10 +18,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.panther.app.R
 import com.panther.app.feature.HomeScreen
 import com.panther.app.feature.ProfileScreen
@@ -114,16 +116,18 @@ fun PantherNavigation(
                     onBack = { navController.popBackStack() },
                 )
             }
-            composable("editor/{id}") { backStack ->
-                val id = backStack.arguments?.getString("id")?.toLongOrNull()
-                if (id != null) {
-                    ProgramEditorScreen(
-                        viewModel = programs,
-                        settings = settings,
-                        programId = id,
-                        onBack = { navController.popBackStack() },
-                    )
-                }
+            composable(
+                route = "editor/{id}",
+                arguments = listOf(navArgument("id") { type = NavType.LongType }),
+            ) { backStack ->
+                ProgramEditorScreen(
+                    viewModel = programs,
+                    settings = settings,
+                    // A missing argument falls back to 0, which the screen reports as "not found"
+                    // instead of leaving an empty destination on the back stack.
+                    programId = backStack.arguments?.getLong("id") ?: 0L,
+                    onBack = { navController.popBackStack() },
+                )
             }
         }
     }

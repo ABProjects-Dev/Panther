@@ -38,9 +38,14 @@ See [docs/GITHUB_ACTIONS.md](GITHUB_ACTIONS.md) for full pipeline details.
 - Keystore and signing credentials are stored exclusively in GitHub Secrets and passed via process environment variables during CI release builds.
 - No network permissions, analytics SDKs, or sensitive credentials exist in the repository.
 
+## Repository layout notes
+- `docs/decisions/` holds one ADR per consequential decision (`ADR-NNNN-<slug>.md`).
+- `app/src/main/assets/licenses/` carries the verbatim third-party licence texts shipped inside the APK.
+- `.github/workflows/protected-files.yml` guards `AGENTS.md`; `.github/CODEOWNERS` routes its changes to the owner.
+
 ## Maintenance
 - Artifacts expire automatically (`1` day for CI debug APKs, `3` days for CI reports, `30` days for release workflow artifacts).
 - Room schemas are exported to `app/schemas` and exposed to `androidTest` assets for `MigrationTestHelper`; every future schema version bump must commit its exported JSON and explicit migration.
 
-Last Updated: 2026-11-07
+Last Updated: 2026-11-11
 Language: English (`[DOC-13]`)

@@ -17,6 +17,7 @@ toolchain. Rules that require this document: `[DOC-04]` (Tier 2), `[VAL-08]`, `[
 | Check | Command | Notes |
 |---|---|---|
 | Unit tests | `./gradlew :app:testDebugUnitTest` | JVM only, no device needed |
+| Unit-test coverage | `./gradlew :app:jacocoDebugUnitTestReport` | HTML/XML under `app/build/reports/jacoco/jacocoDebugUnitTestReport/` |
 | Android Lint | `./gradlew :app:lintDebug` | Report: `app/build/reports/lint-results-debug.html` |
 | Compile debug APK | `./gradlew :app:assembleDebug` | Output: `app/build/outputs/apk/debug/Panther Vx.y.z.apk` |
 | Compile androidTest APK | `./gradlew :app:assembleDebugAndroidTest` | Proves the instrumented sources compile |
@@ -27,14 +28,15 @@ toolchain. Rules that require this document: `[DOC-04]` (Tier 2), `[VAL-08]`, `[
 CI shorthand — the exact command `ci.yml` uses:
 
 ```bash
-./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace
+./gradlew :app:testDebugUnitTest :app:jacocoDebugUnitTestReport :app:lintDebug \
+  :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace
 ```
 
 On Windows use `gradlew.bat`. Run everything from the repository root.
 
 ## What the suites cover
 
-Unit tests (`app/src/test/java/com/panther/app/`) — 25 tests:
+Unit tests (`app/src/test/java/com/panther/app/`) — 57 tests:
 
 | File | Tests | Covers |
 |---|---|---|
@@ -43,13 +45,18 @@ Unit tests (`app/src/test/java/com/panther/app/`) — 25 tests:
 | `domain/BackupLimitTest.kt` | 4 | Symmetric limits and boundary values |
 | `core/format/PantherDateFormatTest.kt` | 3 | Jalali date formatting |
 | `feature/ProgramsViewModelTest.kt` | 3 | Program-list view-model state |
+| `domain/DurationCatalogTest.kt` | 18 | Duration parsing (Persian and ASCII digits), preset ordering/uniqueness, custom-value insertion, search by label/key/seconds |
+| `domain/BmiCalculatorTest.kt` | 9 | BMI guard rails (missing, non-finite, out-of-range), boundary acceptance, category thresholds, rounding |
+| `feature/EditorAvailabilityTest.kt` | 5 | `editor/{id}` resolution: found, still loading, missing, `0` fallback for a malformed argument |
 
-Instrumented tests (`app/src/androidTest/java/com/panther/app/`) — 11 tests:
+Instrumented tests (`app/src/androidTest/java/com/panther/app/`) — 16 tests:
 
 | File | Tests | Covers |
 |---|---|---|
 | `data/PantherDatabaseTest.kt` | 9 | Room schema, DAO behavior, ordering and cascade rules |
 | `MainActivityTest.kt` | 2 | Activity launch and basic navigation smoke test |
+| `feature/SettingsViewModelTest.kt` | 4 | Import validation rejects malformed JSON without touching data; an accepted restore writes `filesDir/pre-restore/backup-before-restore.json` and replaces the dataset; export writes a decodable JSON document and a `%PDF-` document to a real `content://` destination |
+| `feature/ProgramNotFoundScreenTest.kt` | 1 | The terminal `editor/{id}` screen shows the message and wires the back action |
 
 ## CI mapping
 
