@@ -1,8 +1,8 @@
 # Panther Project Requirements Specification
 
 ## Document History
-- **Version**: 1.1.0
-- **Date**: 2026-11-07
+- **Version**: 1.2.0
+- **Date**: 2026-11-11
 - **Status**: Active
 
 ## System Requirements

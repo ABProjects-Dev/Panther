@@ -1,7 +1,18 @@
 # Panther Project Releases
 
 ## Official Releases (`[REL-08]`)
-Releases are managed via GitHub Actions (`release.yml`) and tagged with Semantic Versioning (`[REL-03]`) using Persian annotated tag descriptions (`AGENTS.project.md`; conflicts with `[REL-09]`, see `PD-002` in `docs/PROJECT_STATUS.md`).
+Releases are managed via GitHub Actions (`release.yml`) and tagged with Semantic Versioning (`[REL-03]`) using Persian annotated tag descriptions (`AGENTS.project.md`). `PD-002` — the conflict with `[REL-09]`, which
+asks for English — was decided by the owner on 2026-11-11 in favour of Persian, so the deviation is
+recorded here rather than pending.
+
+### v1.2.0
+- **Date**: 2026-11-11
+- **Tag**: `v1.2.0` (annotated in Persian)
+- **Workflow Artifact**: `panther-official-release-v1.2.0`
+- **Release Assets**: built, verified (`aapt2` badging, `apksigner` v2/v3) and published by `release.yml` from the tagged commit as `Panther V1.2.0.apk` and `Panther V1.2.0.apk.sha256`
+- **Notes**: Restore now writes a safety snapshot to `filesDir/pre-restore` before replacing data; backup and single-program PDF exports render into a cache file and only then copy to the picked document; `release.yml` refuses to reuse a tag that already has a release; the Vazirmatn SIL OFL 1.1 text ships inside the APK; duration labels come from `strings.xml` so no user-facing Persian text lives in the domain; `editor/{id}` shows a dedicated "program not found" screen for a deleted or malformed id; the test suite is split into 57 unit and 16 instrumented tests with JaCoCo coverage and build-failure annotations in `ci.yml`; runtime dependencies refreshed.
+- **Signature**: Signed and verified with `apksigner` (APK Signature Scheme v2/v3) in `release.yml` via GitHub Secrets (`[SEC-07]`).
+- **Status**: Published directly on GitHub Releases (`draft: false`) by `release.yml` once the tag is pushed.
 
 ### v1.1.0
 - **Date**: 2026-11-08

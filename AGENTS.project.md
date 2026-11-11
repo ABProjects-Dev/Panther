@@ -109,7 +109,8 @@ Tracked as `PD-001`–`PD-003` in `docs/PROJECT_STATUS.md`.
 
 - **PD-001** — APK naming: current `Panther Vx.y.z.apk` vs baseline `[REL-07]`
   `<project>-<version>-<platform>.<ext>`.
-- **PD-002** — annotated tag message language: current Persian vs baseline `[REL-09]` (English).
+- **PD-002** — decided by the owner on 2026-11-11: annotated tag messages stay **Persian**; the
+  deviation from `[REL-09]` is recorded in `RELEASES.md` (no longer pending).
 - **PD-003** — Persian README path: current `.github/README.md` vs baseline `[DOC-17]` (`README.fa.md`).
 
 Language: English (`[DOC-13]`).
