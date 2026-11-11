@@ -62,7 +62,7 @@ class SettingsViewModelTest {
         withTimeout(15_000) { viewModel.operationMessage.first { it != null } }!!
 
     @Test
-    fun restoreWritesSafetySnapshotAndReplacesTheData() = runBlocking {
+    fun restoreWritesSafetySnapshotAndReplacesTheData() = runBlocking<Unit> {
         repository.createProgram("Original")
 
         val importFile = File(context.cacheDir, "import-backup.json").apply {
@@ -83,7 +83,7 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun invalidImportIsRejectedAndLeavesDataUntouched() = runBlocking {
+    fun invalidImportIsRejectedAndLeavesDataUntouched() = runBlocking<Unit> {
         repository.createProgram("Keep me")
 
         val badFile = File(context.cacheDir, "bad-backup.json").apply { writeText("{ not json") }
