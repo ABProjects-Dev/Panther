@@ -53,5 +53,6 @@ so no user has to migrate a file.
 easier: adding suggestions, "add to database", and renumbering without extra counters · harder:
 the program table can briefly hold a placeholder row, so every reader treats
 `PENDING_PROGRAM_NAME` as "unnamed" · now costly to reverse: the schema version (reverting needs its
-own migration) · follow-up: confirm the committed `2.json` identity hash on a machine that can run
-the Room compiler, and add Compose UI tests for the reorder toggle and the name field.
+own migration) · follow-up: the committed `2.json` was validated by CI's schema step and by
+`MigrationTestHelper`, but its `identityHash` should still be read back from a local build for
+certainty; Compose UI tests for the reorder toggle and the name field remain to be added.

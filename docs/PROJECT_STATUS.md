@@ -70,10 +70,10 @@ which replaced the numbered-rule document; project-specific rules now live in `A
 
 | check | last run | result |
 |---|---|---|
-| Unreleased editor change set (2026-11-19) | 2026-11-19 | **not compiled, not tested** — no JDK/Android SDK in the sandbox; only static review, `git diff` review and `strings.xml` consistency checks were possible |
-| `app/schemas/…/2.json` | 2026-11-19 | hand-written from the v1 file plus the new `exercise_catalog` entity; `identityHash` is set to `TO_BE_REGENERATED_BY_ROOM` and **must** be replaced by a real Room build before merging |
-| New unit tests (`ExerciseNameCatalogTest`, extended `ProgramsViewModelTest`) | 2026-11-19 | written, **not executed** — CI is the first execution |
-| New instrumented tests (migration 1→2, catalogue, insert order) | 2026-11-19 | written, **not executed** — needs an emulator |
+| Unreleased editor change set (2026-11-19) | 2026-11-19 | **CI green on PR #41** (`4c8f8f2`): unit tests 70/70, instrumentation 20/20, `lintDebug` 0 blocking issues (18 total), debug APK built, `AGENTS.md` guard passed. Not built locally — the sandbox has no JDK/Android SDK |
+| `app/schemas/…/2.json` | 2026-11-19 | hand-written from `1.json` plus the new `exercise_catalog` entity. CI's *Verify Room schema baseline* step passed on a clean build and `MigrationTestHelper` validated the v1→v2 upgrade against it, so the file matches what Room generates. The `identityHash` value itself could not be read back from the run: artifact and log downloads are blocked from this sandbox |
+| New unit tests (`ExerciseNameCatalogTest`, extended `ProgramsViewModelTest`) | 2026-11-19 | executed by CI: 70 unit tests, 0 failures. Two earlier red runs were real defects (compile errors, then a fake-repository gap) and are fixed in `a04fbc7` and `4c8f8f2` |
+| New instrumented tests (migration 1→2, catalogue, insert order) | 2026-11-19 | executed by CI on the API 29 emulator: 20 tests, 0 failures |
 | `git status` / diff review of this change | 2026-11-11 | clean tree before the change; reviewed after |
 | stale rule-reference grep (`Rule N`, `19.1`) | 2026-11-11 | 45 stale citations before; 0 after the fix |
 | Markdown link existence check for touched docs | 2026-11-11 | all relative links resolve |
