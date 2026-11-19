@@ -6,7 +6,7 @@ Panther is a Persian-first, offline-first Android application for creating, orga
 
 ## Scope
 
-- **Visual identity & typography:** Application branded as `Panther` across launcher, headers, dashboard and onboarding, with a custom fitness dumbbell/crest icon and bundled `Vazirmatn` font across all UI and PDF output.
+- **Visual identity & typography:** Application branded as `Panther` across launcher, headers, dashboard and onboarding, with the owner-supplied panther photograph as the launcher, themed and header icon (`ADR-0004`) and bundled `Vazirmatn` font across all UI and PDF output.
 - **Profile & BMI:** Local name, age, height in centimeters and weight in kilograms (no profile photos). Height and weight drive automatic BMI calculation and classification on the Home dashboard.
 - **Dashboard (Home):** Strictly read-only overview showing BMI and the active workout program (highlighted in green), with tabbed training days and individual square boxes for every exercise set. No "New Program" button or "Recent Programs" list on Home.
 - **Programs:** Compact program cards showing name, counts, Jalali creation date and an active/inactive toggle switch, with a floating "New Program" button anchored at the bottom-left corner. Only one program may be active at a time; activating one automatically deactivates the prior active program. Editing and confirmed deletion live exclusively inside each program's dedicated page.

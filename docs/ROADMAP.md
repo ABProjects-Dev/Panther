@@ -1,7 +1,7 @@
 # Roadmap
 
 1. **Repository and project foundation:** Gradle, app entry point, dependencies and documentation.
-2. **Design system, brand identity and navigation:** `Panther` branding, bundled `Vazirmatn` typography, custom fitness launcher/header icons, three-destination shell (`Home`, `Programs`, `Profile`), Persian RTL resources and dark/light/system themes.
+2. **Design system, brand identity and navigation:** `Panther` branding, bundled `Vazirmatn` typography, panther-artwork launcher/header icons, three-destination shell (`Home`, `Programs`, `Profile`), Persian RTL resources and dark/light/system themes.
 3. **Room database and domain models:** version 1 schema preserved without destructive migrations, relational entities, transactional repository operations, BMI calculation, searchable duration catalog, and business validation.
 4. **User profile:** local editing for name, age, height and weight (profile photo feature removed by design).
 5. **Workout program management:** compact program cards, bottom-left floating creation action, toggle switch activation with single-active-program green highlighting, and edit/delete actions inside each program's dedicated page (archive removed by design).

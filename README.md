@@ -58,7 +58,7 @@ On Windows use `gradlew.bat`. Alternatively open the root directory in Android S
 
 ## Current status
 
-The application features a three-destination navigation shell (`Home`, `Programs`, `Profile`, with `Settings` reachable from `Profile` and active-tab pop-to-root); a read-only Home dashboard with BMI calculation, green active-program highlighting, tabbed day views, and square per-set indicators; compact program cards with toggle switches and a bottom-left floating creation button; dedicated program pages with reorderable tabbed training days, drag-and-drop exercise reordering, and searchable duration dropdowns; uniform Jalali date rendering; bundled Vazirmatn fonts; custom fitness launcher/header icons; dynamic edge-to-edge system bar icon contrast; persisted theme selection; validated JSON backup/restore; and per-program PDF export. Android automatic backup remains disabled.
+The application features a three-destination navigation shell (`Home`, `Programs`, `Profile`, with `Settings` reachable from `Profile` and active-tab pop-to-root); a read-only Home dashboard with BMI calculation, green active-program highlighting, tabbed day views, and square per-set indicators; compact program cards with toggle switches and a bottom-left floating creation button; dedicated program pages with reorderable tabbed training days, drag-and-drop exercise reordering, and searchable duration dropdowns; uniform Jalali date rendering; bundled Vazirmatn fonts; panther-artwork launcher, themed and header icons; dynamic edge-to-edge system bar icon contrast; persisted theme selection; validated JSON backup/restore; and per-program PDF export. Android automatic backup remains disabled.
 
 ## GitHub Actions
 
