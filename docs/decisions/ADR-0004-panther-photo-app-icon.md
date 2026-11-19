@@ -45,13 +45,12 @@ committed as rasters:
   background instead of ending on a hard edge.
 - **Legacy and round icons** (`mipmap-*dpi/ic_launcher.png`, `ic_launcher_round.png`): the same
   artwork at `84/108` of the canvas, the round variant carrying a circular alpha mask.
-- **Themed icons** (`drawable-*dpi/ic_launcher_monochrome.png`): Android tints a single-colour layer
-  and composites it on a system-coloured background, so only solid shapes survive. Two candidates were
-  rendered at real size: (a) the photo's luminance as the alpha channel, which turned to grey haze on a
-  light background and to an unreadable blob on a dark one, and (b) a filled silhouette — the 5%
-  threshold of a slightly blurred copy, with the interior holes closed by flood-filling the background
-  from the corners. The silhouette is shipped; it keeps the ears, muzzle and open jaw readable at
-  48 px.
+- **Themed icons** (`drawable-*dpi/ic_launcher_monochrome.png`): Android keeps only the layer's alpha
+  and replaces its colour with the system tint, so the layer is white pixels whose alpha is the photo's
+  luminance (`1%,10%` level, slight blur). Rendered at 48 px on a pale and on a dark themed container it
+  reads as a panther face in both. Rejected candidates: a hard threshold silhouette, which at icon size
+  collapsed into a handful of disconnected blobs with no readable ears or jaw, and a
+  flood-filled solid silhouette, which read as a skull rather than a face.
 - **Background layer** (`drawable/ic_launcher_background.xml`): a solid `#010202` rectangle; the disc
   gradient is gone because the foreground is opaque and the colour must match exactly.
 - **In-app brand mark** (`drawable-*dpi/ic_panther_logo.png`, used at 28 dp by
