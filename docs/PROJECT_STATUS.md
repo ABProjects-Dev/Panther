@@ -1,15 +1,14 @@
 # Project status — Panther
 
-Updated: 2026-11-19 · Version: `v1.3.0` (release documentation finalized, tag pending) · Baseline: `AGENTS.md` 1.0.0
+Updated: 2026-11-19 · Version: `v1.3.0` (released) · Baseline: `AGENTS.md` 1.0.0
 Template: `AGENTS.md` §29.3 · Dated claims only (`[DOC-06]`).
 
 ## Current state
 
 Panther is an offline-first Android application for planning bodybuilding workout routines, with a
-Persian RTL interface, Vazirmatn typography and Jalali dates. `v1.2.0` is the latest published
-release; the editor overhaul (PR #41, merge `b88fb53`) and the panther-artwork icon (PR #42, merge
-`6e4711d`) are merged on `main` and ship in `v1.3.0`, whose documentation is finalized here. The
-project adopted the *Agent Operating Baseline* (`AGENTS.md` 1.0.0) in commit `7775485`,
+Persian RTL interface, Vazirmatn typography and Jalali dates. `v1.3.0` is the latest published
+release: it ships the editor overhaul (PR #41, merge `b88fb53`) and the panther-artwork icon (PR #42,
+merge `6e4711d`). The project adopted the *Agent Operating Baseline* (`AGENTS.md` 1.0.0) in commit `7775485`,
 which replaced the numbered-rule document; project-specific rules now live in `AGENTS.project.md`.
 
 ## Completed
@@ -26,15 +25,17 @@ which replaced the numbered-rule document; project-specific rules now live in `A
 - 2026-11-19 — application icon replaced by the owner-supplied panther photograph across the adaptive
   icon, legacy and round launcher rasters, themed (monochrome) layer and the in-app brand mark
   (`ADR-0004`); merged as PR #42 (`6e4711d`).
-- 2026-11-19 — `v1.3.0` release documentation finalized (`CHANGELOG.md`, `RELEASES.md`, status and plan
-  documents); the tag is created from `main` once the owner-approved merge lands.
+- 2026-11-19 — `v1.3.0` released: documentation merged as PR #43 (`3f90b76`), annotated tag `v1.3.0`
+  pushed, `release.yml` run `44564690775` green on all three jobs and published
+  [Panther V1.3.0](https://github.com/ABProjects-Dev/Panther/releases/tag/v1.3.0) directly
+  (`draft: false`) with `Panther V1.3.0.apk` (`2,194,888` bytes) and its `.sha256`.
 
 ## In progress
 
 | item | owner | expected | blocker |
 |---|---|---|---|
 | ~~Unreleased editor change set (ten owner-requested items, `ADR-0003`)~~ — **merged 2026-11-19** as PR #41 (`b88fb53`) | agent on the session branch | done | — |
-| `v1.3.0` release (tag + publication) | owner | after the documentation merge | `release.yml` publishes from the tag; no manual local build exists |
+| `v1.4.0` scope (next minor cycle) | owner | after `v1.3.0` | candidate work: Room schema cleanup and the toolchain upgrade, both blocked on a machine with a JDK and the Android SDK |
 | Room schema cleanup and build-toolchain upgrade | owner / agent on a workstation | next minor cycle | needs a machine with a JDK and the Android SDK; a schema or toolchain change cannot be built or diagnosed in the agent sandbox |
 
 ## Confirmed defects
