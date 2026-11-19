@@ -49,6 +49,12 @@ interface PantherDao {
     @Query("DELETE FROM exercise_sets WHERE exerciseId = :exerciseId") suspend fun deleteSets(exerciseId: Long)
     @Insert suspend fun insertSets(sets: List<ExerciseSetEntity>)
 
+    @Query("SELECT * FROM exercise_catalog ORDER BY nameKey") fun exerciseCatalog(): Flow<List<ExerciseCatalogEntity>>
+    @Query("SELECT * FROM exercise_catalog ORDER BY nameKey") suspend fun exerciseCatalogNow(): List<ExerciseCatalogEntity>
+    @Query("SELECT COUNT(*) FROM exercise_catalog") suspend fun exerciseCatalogCount(): Int
+    @Query("SELECT name FROM exercise_catalog WHERE nameKey = :nameKey LIMIT 1") suspend fun catalogName(nameKey: String): String?
+    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun insertCatalogName(entry: ExerciseCatalogEntity): Long
+
     @Query("SELECT * FROM programs ORDER BY createdAt, id") suspend fun allPrograms(): List<WorkoutProgramEntity>
     @Query("SELECT * FROM training_days WHERE programId = :programId ORDER BY sortOrder, id") suspend fun allDays(programId: Long): List<TrainingDayEntity>
     @Query("SELECT * FROM exercises WHERE trainingDayId = :dayId ORDER BY sortOrder, id") suspend fun allExercises(dayId: Long): List<ExerciseEntity>

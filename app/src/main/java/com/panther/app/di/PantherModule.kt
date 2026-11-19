@@ -2,6 +2,7 @@ package com.panther.app.di
 
 import android.content.Context
 import androidx.room.Room
+import com.panther.app.data.local.MIGRATION_1_2
 import com.panther.app.data.local.PantherDatabase
 import com.panther.app.data.repository.RoomPantherRepository
 import com.panther.app.domain.repository.PantherRepository
@@ -23,6 +24,9 @@ abstract class RepositoryModule {
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
     @Provides @Singleton fun database(@ApplicationContext context: Context): PantherDatabase =
-        Room.databaseBuilder(context, PantherDatabase::class.java, "panther.db").build()
+        Room.databaseBuilder(context, PantherDatabase::class.java, "panther.db")
+            // Explicit migration: the schema gate in `AGENTS.project.md` forbids destructive upgrades.
+            .addMigrations(MIGRATION_1_2)
+            .build()
     @Provides fun dao(database: PantherDatabase) = database.dao()
 }

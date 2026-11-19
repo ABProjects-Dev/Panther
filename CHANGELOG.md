@@ -1,5 +1,38 @@
 # Panther Project Changelog
 
+## [Unreleased]
+
+### Added
+- Device-only exercise-name catalogue (`exercise_catalog`, Room schema v2 with the additive
+  `MIGRATION_1_2`): the exercise name field filters it while typing, offers an inline "add to
+  catalogue" action for a new name, and the name of every saved exercise is recorded automatically.
+  The catalogue is deliberately excluded from backup files.
+- `TrainingDayScreen` on its own `day/{programId}/{dayId}` route: every training day is a separate
+  card on the program page (and on the Home dashboard) that opens its own screen.
+- "Reorder mode" toggle on the day screen: drag-and-drop and the move actions are off by default and
+  turn on only while the toggle is active.
+- `WorkoutDefaults` (12 repetitions, 3 sets) and `ExerciseNameCatalog` pure helpers, with unit tests.
+- Migration, catalogue and insert-order instrumented tests in `PantherDatabaseTest`.
+- Full-width delete actions at the end of the program and day pages, each behind a confirmation step.
+
+### Changed
+- New exercises pre-fill 12 repetitions instead of 10.
+- Each set is edited as a small square with a set-number badge at its top-start corner and an `R`
+  (repetitions) or `S` (duration) marker instead of a full-width text field.
+- Creating a program no longer asks for a name first: the room opens immediately and the name is
+  chosen on the program page; leaving without a name deletes the room instead of saving it.
+- Exercises carry a visible position number derived from the persisted order, so inserting or moving
+  one renumbers the whole list; `saveExercise(order = …)` now inserts at a position instead of
+  appending.
+- The program page header moved rename/PDF export into a settings dialog; the day page keeps only the
+  add action.
+- Every nested page uses an icon-only back action at the top-right (RTL top end) via
+  `PantherTopBar`, replacing the text "back" button.
+
+### Fixed
+- Moving a day earlier/later used left/right chevrons in a vertical list; the controls are now up/down
+  arrows, matching the direction of the movement.
+
 ## [v1.2.0] - 2026-11-11
 
 ### Added

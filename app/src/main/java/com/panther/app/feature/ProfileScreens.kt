@@ -199,12 +199,11 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
             .padding(PantherSpacing.medium),
         verticalArrangement = Arrangement.spacedBy(PantherSpacing.medium),
     ) {
-        PantherBrandHeader(
-            subtitle = stringResource(R.string.settings),
-            trailing = {
-                TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
-            },
+        PantherTopBar(
+            title = stringResource(R.string.settings),
+            onBack = onBack,
         )
+
         PantherCard {
             Text(stringResource(R.string.theme), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(PantherSpacing.small))
