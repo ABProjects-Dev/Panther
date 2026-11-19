@@ -16,6 +16,12 @@ object WorkoutDefaults {
 
     /** Upper bound for the device-only exercise-name catalogue. */
     const val MAX_CATALOG_NAMES = 500
+
+    /**
+     * Placeholder stored while a new program has no name yet: the program page asks for the name and
+     * deletes the row if the user leaves without choosing one.
+     */
+    const val PENDING_PROGRAM_NAME = "—"
 }
 
 data class UserProfile(

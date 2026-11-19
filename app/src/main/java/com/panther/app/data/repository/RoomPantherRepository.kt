@@ -32,7 +32,7 @@ class RoomPantherRepository @Inject constructor(private val db: PantherDatabase)
         // replaced by the user's name, or the row is discarded on exit.
         require(dao.programCount() < PantherBackup.MAX_PROGRAMS) { "Maximum number of programs reached" }
         dao.insertProgram(
-            WorkoutProgramEntity(name = PENDING_PROGRAM_NAME, createdAt = System.currentTimeMillis()),
+            WorkoutProgramEntity(name = WorkoutDefaults.PENDING_PROGRAM_NAME, createdAt = System.currentTimeMillis()),
         )
     }
 

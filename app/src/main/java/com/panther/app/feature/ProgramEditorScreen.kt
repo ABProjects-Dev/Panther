@@ -315,17 +315,20 @@ fun ProgramEditorScreen(
         }
     }
 
-    if (showProgramSettings) {
+    // `programsState` can emit a list without this id (deleted elsewhere) while a dialog is open, so
+    // the dialog is bound to the non-null snapshot the composition rendered.
+    val currentProgram = program
+    if (showProgramSettings && currentProgram != null) {
         ProgramSettingsDialog(
-            program = program,
+            program = currentProgram,
             onDismiss = { showProgramSettings = false },
             onSave = { newName ->
-                viewModel.rename(program.id, newName)
+                viewModel.rename(currentProgram.id, newName)
                 showProgramSettings = false
             },
             onExportPdf = {
                 showProgramSettings = false
-                pdfLauncher.launch("${program.name}.pdf")
+                pdfLauncher.launch("${currentProgram.name}.pdf")
             },
         )
     }

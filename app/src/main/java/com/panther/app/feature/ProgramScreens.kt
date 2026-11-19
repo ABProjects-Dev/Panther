@@ -30,10 +30,10 @@ import com.panther.app.domain.model.*
 import kotlinx.coroutines.delay
 
 /**
- * Placeholder stored while a new program has no name yet. It is what the editor treats as "empty",
- * and a program that still carries it when the user leaves is deleted instead of saved.
+ * Placeholder stored while a new program has no name yet. The single source of truth is
+ * [WorkoutDefaults.PENDING_PROGRAM_NAME]; this alias keeps the screen code readable.
  */
-internal const val PENDING_PROGRAM_NAME = "—"
+internal const val PENDING_PROGRAM_NAME = WorkoutDefaults.PENDING_PROGRAM_NAME
 
 @Composable
 private fun ErrorNotice(error: Boolean) {
