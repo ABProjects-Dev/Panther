@@ -29,7 +29,6 @@ class MainActivityTest {
         val newProgram = composeRule.activity.getString(R.string.new_program)
         val profileTab = composeRule.activity.getString(R.string.profile)
         val settingsLabel = composeRule.activity.getString(R.string.settings)
-        val backLabel = composeRule.activity.getString(R.string.back)
         val themeSection = composeRule.activity.getString(R.string.theme)
         val nameLabel = composeRule.activity.getString(R.string.name)
 
@@ -54,7 +53,8 @@ class MainActivityTest {
         composeRule.waitUntil(timeoutMillis = 5_000) {
             composeRule.onAllNodesWithText(nameLabel).fetchSemanticsNodes().isNotEmpty()
         }
-        composeRule.onNodeWithText(backLabel).assertDoesNotExist()
+        // Settings is gone: its theme section no longer exists, so its icon back action is gone too.
+        composeRule.onNodeWithText(themeSection).assertDoesNotExist()
         composeRule.onNodeWithText(nameLabel).performScrollTo().assertIsDisplayed()
     }
 }

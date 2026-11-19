@@ -89,6 +89,72 @@ class ProgramsViewModelTest {
     }
 
     @Test
+    fun insertingAnExerciseMidListRenumbersTheWholeDay() = runTest {
+        val programId = repo.createProgram("Plan")
+        val dayId = repo.addDay(programId, "Day 1", 0)
+        viewModel.saveExercise(dayId, null, "اسکوات", null, repSets(12))
+        viewModel.saveExercise(dayId, null, "پرس سینه", null, repSets(12))
+
+        // Insert at slot 0: everything below shifts down, numbers stay dense (1..n).
+        viewModel.saveExercise(dayId, null, "ددلیفت", 0, repSets(12))
+        val afterInsert = viewModel.exercisesWithSets(dayId).first().value
+        assertEquals(listOf("ددلیفت", "اسکوات", "پرس سینه"), afterInsert.map { it.exercise.name })
+        assertEquals(listOf(0, 1, 2), afterInsert.map { it.exercise.sortOrder })
+    }
+
+    @Test
+    fun reorderingRenumbersWithoutChangingTheTargets() = runTest {
+        val programId = repo.createProgram("Plan")
+        val dayId = repo.addDay(programId, "Day 1", 0)
+        viewModel.saveExercise(dayId, null, "A", null, repSets(12))
+        viewModel.saveExercise(dayId, null, "B", null, repSets(8))
+        val before = viewModel.exercisesWithSets(dayId).first().value
+
+        viewModel.reorderExercises(dayId, listOf(before[1].exercise.id, before[0].exercise.id))
+        val after = viewModel.exercisesWithSets(dayId).first().value
+
+        assertEquals(listOf("B", "A"), after.map { it.exercise.name })
+        assertEquals(listOf(0, 1), after.map { it.exercise.sortOrder })
+        assertEquals(listOf(8, 12), after.map { it.sets.single().targetValue })
+    }
+
+    @Test
+    fun aNewProgramIsCreatedWithoutANameAndStaysUntilItIsNamed() = runTest {
+        var createdId: Long? = null
+        viewModel.createPendingProgram { createdId = it }
+        val created = checkNotNull(createdId)
+        val pending = viewModel.programs.first { !it.loading }.value.single()
+
+        assertEquals(created, pending.id)
+        assertEquals(PENDING_PROGRAM_NAME, pending.name)
+
+        // Choosing the name replaces the placeholder; leaving without one deletes the room.
+        viewModel.rename(created, "برنامه قدرتی")
+        assertEquals("برنامه قدرتی", repo.observePrograms().first().single().name)
+
+        viewModel.createPendingProgram { createdId = it }
+        val second = checkNotNull(createdId)
+        viewModel.delete(second)
+        assertTrue(repo.observePrograms().first().none { it.id == second })
+    }
+
+    @Test
+    fun savingAnExerciseRemembersItsNameForTheCatalogue() = runTest {
+        val programId = repo.createProgram("Plan")
+        val dayId = repo.addDay(programId, "Day 1", 0)
+
+        viewModel.saveExercise(dayId, null, "  اسکوات  ", null, repSets(12))
+        viewModel.rememberExerciseName("پرس سینه")
+        viewModel.rememberExerciseName("پرس سینه")
+
+        assertEquals(listOf("اسکوات", "پرس سینه"), viewModel.exerciseNames.first())
+    }
+
+    private fun repSets(reps: Int) = listOf(
+        ExerciseSet(exerciseId = 0, setNumber = 1, targetType = TargetType.REPS, targetValue = reps),
+    )
+
+    @Test
     fun saveExerciseInPlaceAndClearErrorBehavePredictably() = runTest {
         val programId = repo.createProgram("Plan")
         val dayId = repo.addDay(programId, "Day 1", 0)
@@ -134,6 +200,7 @@ private class FakePantherRepository : PantherRepository {
     private val daysFlow = MutableStateFlow<List<TrainingDay>>(emptyList())
     private val exercisesFlow = MutableStateFlow<List<Exercise>>(emptyList())
     private val setsFlow = MutableStateFlow<List<ExerciseSet>>(emptyList())
+    private val catalogFlow = MutableStateFlow<List<String>>(emptyList())
 
     override fun observeProfile(): Flow<UserProfile?> = profileFlow
 
@@ -149,6 +216,14 @@ private class FakePantherRepository : PantherRepository {
         require(programsFlow.value.size < PantherBackup.MAX_PROGRAMS)
         val id = nextId++
         val program = WorkoutProgram(id, name.trim(), 1_700_000_000_000L, false, 0, 0)
+        programsFlow.value = listOf(program) + programsFlow.value
+        return id
+    }
+
+    override suspend fun createPendingProgram(): Long {
+        require(programsFlow.value.size < PantherBackup.MAX_PROGRAMS)
+        val id = nextId++
+        val program = WorkoutProgram(id, PENDING_PROGRAM_NAME, 1_700_000_000_000L, false, 0, 0)
         programsFlow.value = listOf(program) + programsFlow.value
         return id
     }
@@ -238,15 +313,23 @@ private class FakePantherRepository : PantherRepository {
         daysFlow.value = daysFlow.value.filterNot { it.programId == programId } + reordered
     }
 
-    override suspend fun saveExercise(dayId: Long, exerciseId: Long?, name: String, order: Int, sets: List<ExerciseSet>) {
-        require(WorkoutValidation.name(name) && order >= 0)
+    override suspend fun saveExercise(
+        dayId: Long,
+        exerciseId: Long?,
+        name: String,
+        order: Int?,
+        sets: List<ExerciseSet>,
+    ) {
+        require(WorkoutValidation.name(name) && (order == null || order >= 0))
         require(sets.all { it.exerciseId == (exerciseId ?: 0L) } && WorkoutValidation.sets(sets))
         val day = checkNotNull(daysFlow.value.firstOrNull { it.id == dayId })
         val id = if (exerciseId == null) {
             val existing = exercisesFlow.value.filter { it.trainingDayId == dayId }.sortedWith(compareBy({ it.sortOrder }, { it.id }))
             require(existing.size < PantherBackup.MAX_EXERCISES_PER_DAY)
-            val compacted = existing.mapIndexed { idx, e -> e.copy(sortOrder = idx) }
-            val created = Exercise(nextId++, dayId, name.trim(), compacted.size)
+            val targetOrder = (order ?: existing.size).coerceIn(0, existing.size)
+            // Mirror the Room repository: inserting mid-list shifts the following exercises down.
+            val compacted = existing.mapIndexed { idx, e -> e.copy(sortOrder = if (idx >= targetOrder) idx + 1 else idx) }
+            val created = Exercise(nextId++, dayId, name.trim(), targetOrder)
             exercisesFlow.value = exercisesFlow.value.filterNot { it.trainingDayId == dayId } + compacted + created
             created.id
         } else {
@@ -313,6 +396,16 @@ private class FakePantherRepository : PantherRepository {
     override suspend fun restoreBackup(backup: PantherBackup) {
         require(WorkoutValidation.backup(backup))
         profileFlow.value = backup.profile
+    }
+
+    override fun observeExerciseNames(): Flow<List<String>> = catalogFlow
+
+    override suspend fun exerciseNamesNow(): List<String> = catalogFlow.value
+
+    override suspend fun rememberExerciseName(name: String) {
+        val normalized = ExerciseNameCatalog.normalize(name)
+        if (normalized.isEmpty() || ExerciseNameCatalog.contains(catalogFlow.value, normalized)) return
+        catalogFlow.value = catalogFlow.value + normalized
     }
 
     private fun recount(programId: Long) {

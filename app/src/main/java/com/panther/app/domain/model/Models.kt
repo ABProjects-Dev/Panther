@@ -3,6 +3,21 @@ package com.panther.app.domain.model
 import com.panther.app.core.format.PantherDateFormat
 import kotlin.math.round
 
+/** Defaults used when a new exercise or set is created (owner decision of 2026-11-19). */
+object WorkoutDefaults {
+    /** Repetitions pre-filled for a new repetition-based set. */
+    const val DEFAULT_REPS = 12
+
+    /** Sets pre-filled when an exercise is created. */
+    const val DEFAULT_SET_COUNT = 3
+
+    /** Duration pre-filled for a new duration-based set, in `minutes:seconds` form. */
+    const val DEFAULT_DURATION_RAW = "0:30"
+
+    /** Upper bound for the device-only exercise-name catalogue. */
+    const val MAX_CATALOG_NAMES = 500
+}
+
 data class UserProfile(
     val name: String,
     val age: Int? = null,
@@ -154,6 +169,49 @@ data class PantherBackup(
         const val MAX_EXERCISES_PER_DAY = 50
         const val MAX_SETS_PER_EXERCISE = 30
         const val MAX_BACKUP_BYTES = 8_000_000
+    }
+}
+
+/**
+ * Device-only catalogue of exercise names the user has typed before. Kept as pure functions so the
+ * matching rules (which decide what the name field suggests) are unit-testable without Compose.
+ * The catalogue never leaves the device: backups do not carry it (owner decision 2026-11-19).
+ */
+object ExerciseNameCatalog {
+    /** Trims, collapses repeated whitespace and folds Persian/Arabic digits to ASCII digits. */
+    fun normalize(raw: String): String =
+        PantherDateFormat.asciiDigits(raw).trim().replace(Regex("\\s+"), " ")
+
+    /** Normalized, non-blank, case-insensitively distinct names, first spelling wins. */
+    fun distinct(names: List<String>): List<String> =
+        names.map(::normalize).filter { it.isNotEmpty() }.distinctBy { it.lowercase() }
+
+    fun contains(names: List<String>, value: String): Boolean {
+        val target = normalize(value).lowercase()
+        return target.isNotEmpty() && distinct(names).any { it.lowercase() == target }
+    }
+
+    /**
+     * Suggestions for the name field: prefix matches first, then substring matches, shortest first.
+     * An empty query lists the catalogue so the field also works as a picker.
+     */
+    fun suggestions(names: List<String>, query: String, limit: Int = 6): List<String> {
+        val normalizedQuery = normalize(query).lowercase()
+        val pool = distinct(names)
+        val matching = if (normalizedQuery.isEmpty()) {
+            pool
+        } else {
+            pool.filter { it.lowercase().contains(normalizedQuery) }
+        }
+        return matching
+            .sortedWith(
+                compareBy(
+                    { if (it.lowercase().startsWith(normalizedQuery)) 0 else 1 },
+                    { it.length },
+                    { it },
+                ),
+            )
+            .take(limit)
     }
 }
 

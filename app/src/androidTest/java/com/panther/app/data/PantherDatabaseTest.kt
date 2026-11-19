@@ -6,10 +6,12 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.panther.app.data.backup.PantherBackupJson
 import com.panther.app.data.backup.ProgramPdfExporter
+import com.panther.app.data.local.MIGRATION_1_2
 import com.panther.app.data.local.PantherDatabase
 import com.panther.app.data.repository.RoomPantherRepository
 import com.panther.app.domain.model.DayBackup
 import com.panther.app.domain.model.ExerciseBackup
+import com.panther.app.domain.model.ExerciseNameCatalog
 import com.panther.app.domain.model.ExerciseSet
 import com.panther.app.domain.model.PantherBackup
 import com.panther.app.domain.model.ProgramBackup
@@ -264,5 +266,74 @@ class PantherDatabaseTest {
         val profile = UserProfile("User", age = 30, heightCm = 180.0, weightKg = 80.0)
         repository.saveProfile(profile)
         assertEquals(profile, repository.observeProfile().first())
+    }
+
+    @Test
+    fun migrationFrom1To2KeepsProgramsAndAddsTheNameCatalogue() {
+        // The catalogue is the only schema change in v2: a v1 database must upgrade in place.
+        migrationHelper.createDatabase(TEST_DB, 1).use { v1 ->
+            v1.execSQL("INSERT INTO programs (id, name, createdAt, isActive, isArchived) VALUES (1, 'Plan', 1, 0, 0)")
+            v1.execSQL("INSERT INTO training_days (id, programId, name, sortOrder) VALUES (1, 1, 'Day', 0)")
+            v1.execSQL("INSERT INTO exercises (id, trainingDayId, name, sortOrder) VALUES (1, 1, 'Squat', 0)")
+            v1.execSQL("INSERT INTO exercise_sets (id, exerciseId, setNumber, targetType, targetValue) VALUES (1, 1, 1, 'REPS', 12)")
+        }
+
+        val migrated = migrationHelper.runMigrationsAndValidate(TEST_DB, 2, true, MIGRATION_1_2)
+
+        migrated.query("SELECT name FROM programs WHERE id = 1").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("Plan", cursor.getString(0))
+        }
+        migrated.query("SELECT name FROM exercises WHERE id = 1").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("Squat", cursor.getString(0))
+        }
+        migrated.query("SELECT COUNT(*) FROM exercise_catalog").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(0, cursor.getInt(0))
+        }
+        migrated.close()
+    }
+
+    @Test
+    fun exerciseNamesAreRememberedOnceAndNeverDuplicated() = runTest {
+        repository.rememberExerciseName("  اسکوات  ")
+        repository.rememberExerciseName("اسکوات")
+        repository.rememberExerciseName("Squat")
+        repository.rememberExerciseName("squat")
+
+        assertEquals(listOf("Squat", "اسکوات"), repository.exerciseNamesNow())
+        assertEquals(
+            ExerciseNameCatalog.distinct(repository.exerciseNamesNow()),
+            repository.observeExerciseNames().first(),
+        )
+    }
+
+    @Test
+    fun savingAnExerciseAddsItsNameToTheCatalogue() = runTest {
+        val program = repository.createProgram("Plan")
+        val day = repository.addDay(program, "Day", 0)
+
+        repository.saveExercise(day, null, "ددلیفت", null, listOf(defaultRepSet(reps = 12)))
+
+        assertTrue(repository.exerciseNamesNow().any { it == "ددلیفت" })
+    }
+
+    @Test
+    fun insertingAtAnOrderRenumbersTheFollowingExercises() = runTest {
+        val program = repository.createProgram("Plan")
+        val day = repository.addDay(program, "Day", 0)
+        repository.saveExercise(day, null, "A", null, listOf(defaultRepSet()))
+        repository.saveExercise(day, null, "B", null, listOf(defaultRepSet()))
+
+        repository.saveExercise(day, null, "First", 0, listOf(defaultRepSet()))
+
+        val names = repository.observeExercises(day).first()
+        assertEquals(listOf("First", "A", "B"), names.map { it.name })
+        assertEquals(listOf(0, 1, 2), names.map { it.sortOrder })
+    }
+
+    private companion object {
+        const val TEST_DB = "migration-test.db"
     }
 }

@@ -13,6 +13,7 @@ This document provides technical details for the Panther Android application API
 - **WorkoutProgram**: ID, name, creation timestamp, active status, day count, exercise count.
 - **TrainingDay**: ID, program ID, name, dense `sortOrder`.
 - **Exercise / ExerciseSet / ExerciseWithSets**: Exercise metadata paired with ordered per-set repetition or duration targets.
+- **ExerciseNameCatalog / WorkoutDefaults**: pure helpers for the device-only name catalogue (`normalize`, `distinct`, `contains`, `suggestions`) and the shared creation defaults (`DEFAULT_REPS = 12`, `DEFAULT_SET_COUNT = 3`, `DEFAULT_DURATION_RAW = "0:30"`, `MAX_CATALOG_NAMES = 500`).
 - **ProgramBackup / DayBackup / ExerciseBackup / SetBackup / PantherBackup**: Versioned backup snapshot models with bounded structural limits (`MAX_PROGRAMS = 100`, `MAX_DAYS_PER_PROGRAM = 50`, `MAX_EXERCISES_PER_DAY = 50`, `MAX_SETS_PER_EXERCISE = 30`, `MAX_BACKUP_BYTES = 8_000_000`).
 
 ## Repository Interface
@@ -22,19 +23,29 @@ This document provides technical details for the Panther Android application API
 - **Observation:** `observeProfile()`, `observePrograms()`, `observeDays(programId)`,
   `observeExercises(dayId)`, `observeExercisesWithSets(dayId)`, `observeSets(exerciseId)`.
 - **Profile:** `saveProfile(profile)`.
-- **Programs:** `createProgram(name)`, `renameProgram(id, name)`, `deleteProgram(id)`,
-  `activateProgram(id)`, `deactivateProgram(id)`.
+- **Programs:** `createProgram(name)`, `createPendingProgram()` (creates the room before the name is
+  chosen), `renameProgram(id, name)`, `deleteProgram(id)`, `activateProgram(id)`, `deactivateProgram(id)`.
 - **Days:** `addDay(programId, name, order)`, `renameDay(id, name)`, `deleteDay(id)`,
   `reorderDays(programId, ids)`.
-- **Exercises and sets:** `saveExercise(dayId, exerciseId, name, order, sets)`,
-  `deleteExercise(id)`, `reorderExercises(dayId, ids)`.
+- **Exercises and sets:** `saveExercise(dayId, exerciseId, name, order, sets)` — `order = null`
+  appends, a value inserts at that dense position and shifts the rest down — `deleteExercise(id)`,
+  `reorderExercises(dayId, ids)`.
+- **Exercise-name catalogue (device-only):** `observeExerciseNames()`, `exerciseNamesNow()`,
+  `rememberExerciseName(name)`. The catalogue is not part of the backup format.
 - **Backup & PDF snapshot:** `createProgramBackup(programId)`, `createBackup()`,
   `restoreBackup(backup)`.
 
 ## ViewModels
-- **ProgramsViewModel**: Manages workout program/day/exercise flows, activation toggles, day and exercise reordering, and error state (`clearError()`).
+- **ProgramsViewModel**: Manages workout program/day/exercise flows, activation toggles, day and
+  exercise reordering, the device-only exercise-name catalogue (`exerciseNames`), pending-program
+  creation (`createPendingProgram`), and error state (`clearError()`).
 - **ProfileViewModel**: Manages local user profile persistence, validation, and transient save/error states (`clearSaved()`, `clearError()`).
 - **SettingsViewModel**: Manages persisted theme selection, single-program PDF export (`pdfMessage`), and validated JSON backup/restore operations (`operationMessage`).
+
+## Room schema
+- **Version 2** (`app/schemas/com.panther.app.data.local.PantherDatabase/2.json`): adds
+  `exercise_catalog` plus its unique `nameKey` index through the additive `MIGRATION_1_2`; no existing
+  table or row changes, so v1 databases upgrade in place.
 
 ## Backup JSON Format
 

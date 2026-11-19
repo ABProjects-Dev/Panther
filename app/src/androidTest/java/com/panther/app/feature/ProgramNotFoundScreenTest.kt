@@ -2,6 +2,7 @@ package com.panther.app.feature
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -33,7 +34,8 @@ class ProgramNotFoundScreenTest {
         composeRule.onNodeWithText(context.getString(R.string.program_not_found)).assertIsDisplayed()
         composeRule.onNodeWithText(context.getString(R.string.program_not_found_hint)).assertIsDisplayed()
 
-        composeRule.onNodeWithText(context.getString(R.string.back)).performClick()
+        // Task 9 moved the back action into an icon-only button, so it is found by its label.
+        composeRule.onNodeWithContentDescription(context.getString(R.string.back)).performClick()
 
         assertTrue("the back action must be wired to the navigation callback", backPressed)
     }

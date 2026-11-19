@@ -6,17 +6,17 @@ Panther is an offline-first Android application built with Kotlin, Jetpack Compo
 ## Layers
 
 ### 1. Presentation Layer
-- **Components**: Composable screens (`HomeScreen`, `ProgramsScreen`, `ProgramEditorScreen`, `ProfileScreen`, `SettingsScreen`), ViewModels (`ProgramsViewModel`, `ProfileViewModel`, `SettingsViewModel`), Navigation (`PantherNavigation`), Design System (`Vazirmatn` typography, `PantherExtendedColors`, reusable components), and Jalali date formatting (`PantherDateFormat`).
+- **Components**: Composable screens (`HomeScreen`, `ProgramsScreen`, `ProgramEditorScreen`, `TrainingDayScreen`, `ProfileScreen`, `SettingsScreen`), ViewModels (`ProgramsViewModel`, `ProfileViewModel`, `SettingsViewModel`), Navigation (`PantherNavigation`), Design System (`Vazirmatn` typography, `PantherExtendedColors`, reusable components), and Jalali date formatting (`PantherDateFormat`).
 - **Technology**: Jetpack Compose, Material 3, Hilt, Kotlin Coroutines & StateFlow, Edge-to-Edge `SystemBarStyle`.
 - **Location**: `app/src/main/java/com/panther/app/feature/`, `app/src/main/java/com/panther/app/core/`.
 
 ### 2. Domain Layer
-- **Components**: Immutable domain models (`WorkoutProgram`, `TrainingDay`, `Exercise`, `ExerciseSet`, `ExerciseWithSets`, `UserProfile`, `PantherBackup`), `BmiCalculator`, `DurationCatalog`, `WorkoutValidation`, `PantherRepository` interface, and use cases.
+- **Components**: Immutable domain models (`WorkoutProgram`, `TrainingDay`, `Exercise`, `ExerciseSet`, `ExerciseWithSets`, `UserProfile`, `PantherBackup`), `BmiCalculator`, `DurationCatalog`, `WorkoutValidation`, `ExerciseNameCatalog` / `WorkoutDefaults` (pure catalogue matching and the shared defaults), `PantherRepository` interface, and use cases.
 - **Technology**: Pure Kotlin and Coroutines Flow.
 - **Location**: `app/src/main/java/com/panther/app/domain/`.
 
 ### 3. Data Layer
-- **Components**: `RoomPantherRepository`, `PantherDatabase` & `PantherDao` (Room schema v1 with foreign-key cascades and transactional `@Relation` queries), `PantherBackupJson` codec, `ProgramPdfExporter` (RTL A4 PDF generator with Vazirmatn fonts), `SafeUriOutput` (SAF stream helper), and `ThemePreferences` (DataStore).
+- **Components**: `RoomPantherRepository`, `PantherDatabase` & `PantherDao` (Room schema v2 with foreign-key cascades, transactional `@Relation` queries, and the additive `MIGRATION_1_2`), `PantherBackupJson` codec, `ProgramPdfExporter` (RTL A4 PDF generator with Vazirmatn fonts), `SafeUriOutput` (SAF stream helper), and `ThemePreferences` (DataStore).
 - **Technology**: Room 2.6.1, KSP, Preferences DataStore, Android `PdfDocument`.
 - **Location**: `app/src/main/java/com/panther/app/data/`, `app/src/main/java/com/panther/app/core/settings/`.
 
@@ -38,6 +38,12 @@ See [docs/GITHUB_ACTIONS.md](GITHUB_ACTIONS.md) for full pipeline details.
 - Keystore and signing credentials are stored exclusively in GitHub Secrets and passed via process environment variables during CI release builds.
 - No network permissions, analytics SDKs, or sensitive credentials exist in the repository.
 
+## Screen structure and navigation
+- **Destinations**: `home`, `programs`, `profile`, `settings`, `editor/{id}` (one program) and `day/{programId}/{dayId}` (one training day). Every training day is its own screen, reached from its own card on the program page or from the read-only home dashboard; the program page no longer hosts tabs.
+- **Numbering**: exercise and day numbers are derived from the persisted dense `sortOrder` (`sortOrder + 1`), so a reorder or a mid-list insert renumbers the list without a separate counter.
+- **Reordering**: disabled by default. `PantherReorderToggle` on the day screen enables the drag handles and the move actions; `RoomPantherRepository.saveExercise(order = …)` inserts at a position and shifts the following exercises down.
+- **Exercise-name catalogue**: `exercise_catalog` is device-only (`name`, normalized lowercase `nameKey`, `createdAt`) and is deliberately excluded from `PantherBackup`; the name field filters it as the user types and offers an inline "add" action for a new name.
+
 ## Repository layout notes
 - `docs/decisions/` holds one ADR per consequential decision (`ADR-NNNN-<slug>.md`).
 - `app/src/main/assets/licenses/` carries the verbatim third-party licence texts shipped inside the APK.
@@ -47,5 +53,5 @@ See [docs/GITHUB_ACTIONS.md](GITHUB_ACTIONS.md) for full pipeline details.
 - Artifacts expire automatically (`1` day for CI debug APKs, `3` days for CI reports, `30` days for release workflow artifacts).
 - Room schemas are exported to `app/schemas` and exposed to `androidTest` assets for `MigrationTestHelper`; every future schema version bump must commit its exported JSON and explicit migration.
 
-Last Updated: 2026-11-11
+Last Updated: 2026-11-19
 Language: English (`[DOC-13]`)

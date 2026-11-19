@@ -91,6 +91,15 @@ class ProgramsViewModel @Inject constructor(
     }
 
     fun create(name: String) = execute { createProgram(name) }
+
+    /**
+     * Creates the room for a new program and reports its id, so the caller can open the program page
+     * where the name is chosen (task 5). No name prompt happens before the room exists.
+     */
+    fun createPendingProgram(onCreated: (Long) -> Unit) = execute {
+        val id = repository.createPendingProgram()
+        onCreated(id)
+    }
     fun rename(id: Long, name: String) = execute { updateProgram(id, name) }
     fun delete(id: Long, onDeleted: (() -> Unit)? = null) = execute(onComplete = onDeleted) { deleteProgram(id) }
     fun activate(id: Long) = execute { activateProgram(id) }
@@ -98,11 +107,30 @@ class ProgramsViewModel @Inject constructor(
     fun setActive(id: Long, active: Boolean) = if (active) activate(id) else deactivate(id)
 
     fun addDay(programId: Long, name: String, order: Int) = execute { repository.addDay(programId, name, order) }
+
+    /** Adds a day and reports its generated id, so the caller can open the new day screen. */
+    fun addDay(onCreated: (Long) -> Unit, programId: Long, name: String, order: Int) = execute {
+        val id = repository.addDay(programId, name, order)
+        onCreated(id)
+    }
     fun renameDay(id: Long, name: String) = execute { repository.renameDay(id, name) }
-    fun deleteDay(id: Long) = execute { repository.deleteDay(id) }
+    fun deleteDay(id: Long, onDeleted: (() -> Unit)? = null) =
+        execute(onComplete = onDeleted) { repository.deleteDay(id) }
+
+    /** Adds [name] to the device-only catalogue without touching any program data. */
+    fun rememberExerciseName(name: String) = execute { repository.rememberExerciseName(name) }
     fun reorderDays(programId: Long, ids: List<Long>) = execute { repository.reorderDays(programId, ids) }
-    fun saveExercise(dayId: Long, exerciseId: Long?, name: String, order: Int, sets: List<ExerciseSet>) =
-        execute { repository.saveExercise(dayId, exerciseId, name, order, sets) }
+    /**
+     * @param order `null` appends to the end of the day; a value inserts at that position and the
+     *   rest of the exercises shift down, so the displayed numbers stay 1..n after a move.
+     */
+    fun saveExercise(
+        dayId: Long,
+        exerciseId: Long?,
+        name: String,
+        order: Int?,
+        sets: List<ExerciseSet>,
+    ) = execute { repository.saveExercise(dayId, exerciseId, name, order, sets) }
     fun deleteExercise(id: Long) = execute { repository.deleteExercise(id) }
     fun reorderExercises(dayId: Long, ids: List<Long>) = execute { repository.reorderExercises(dayId, ids) }
 
@@ -129,6 +157,15 @@ class ProgramsViewModel @Inject constructor(
             logRecoverable("ProgramsViewModel", e)
             emit(DataState(emptyList(), loading = false, error = true))
         }
+
+    /** Device-only exercise-name catalogue backing the name field suggestions. */
+    val exerciseNames = repository.observeExerciseNames()
+        .catch { e ->
+            if (e is CancellationException) throw e
+            logRecoverable("ProgramsViewModel", e)
+            emit(emptyList())
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun sets(exerciseId: Long) = repository.observeSets(exerciseId)
         .catch { e ->

@@ -42,7 +42,6 @@
     <string name="no_days">هنوز روز تمرینی برای این برنامه ثبت نشده است.</string>
     <string name="add_day">افزودن روز</string>
     <string name="day_name">نام روز تمرین</string>
-    <string name="edit_day">ویرایش روز</string>
     <string name="delete_day">حذف روز</string>
     <string name="move_day_earlier">انتقال روز به قبل</string>
     <string name="move_day_later">انتقال روز به بعد</string>
@@ -53,10 +52,7 @@
     <string name="edit_exercise">ویرایش حرکت</string>
     <string name="exercise_name">نام حرکت</string>
     <string name="limit_exercises_reached">حداکثر تعداد مجاز حرکات برای این روز ثبت شده است.</string>
-    <string name="drag_hint">برای جابه‌جایی ترتیب حرکات، دستگیره کنار کارت را بکشید و رها کنید.</string>
     <string name="drag_handle_desc">جابه‌جایی ترتیب حرکت %1$s</string>
-    <string name="move_exercise_up">انتقال حرکت به بالا</string>
-    <string name="move_exercise_down">انتقال حرکت به پایین</string>
     <string name="target_type">نوع هدف</string>
     <string name="repetitions">تکرار</string>
     <string name="duration">مدت‌زمان</string>
@@ -64,7 +60,6 @@
     <string name="set_count_label">تعداد ست‌ها</string>
     <string name="decrease_sets">کاهش تعداد ست‌ها</string>
     <string name="increase_sets">افزایش تعداد ست‌ها</string>
-    <string name="set_repetitions_numbered">تکرار ست %1$s</string>
     <string name="set_duration_numbered">زمان اجرای ست %1$s</string>
     <string name="duration_search_placeholder">جست‌وجوی زمان (مثلاً ۳۰ یا ۱:۳۰)…</string>
     <string name="clear_search">پاک کردن جست‌وجو</string>
@@ -72,7 +67,6 @@
     <string name="duration_label_seconds">%1$s ثانیه (%2$s)</string>
     <string name="duration_label_minutes">%1$s دقیقه (%2$s)</string>
     <string name="duration_label_minutes_seconds">%1$s دقیقه و %2$s ثانیه (%3$s)</string>
-    <string name="reps_unit_short">تکرار</string>
     <string name="individual_targets_hint">هدف هر ست جداگانه ذخیره می‌شود؛ این مقادیر برنامه‌ریزی هستند، نه ثبت عملکرد.</string>
     <string name="error_exercise">نام، تعداد ست‌ها و هدف هر ست را بررسی کنید.</string>
     <string name="confirm_delete_exercise">این حرکت و هدف‌های همهٔ ست‌های آن حذف می‌شود. ادامه می‌دهید؟</string>
@@ -110,4 +104,30 @@
     <string name="confirm_import">این فایل شامل %1$d برنامه است. بازیابی، همهٔ اطلاعات فعلی برنامه را جایگزین می‌کند.</string>
     <string name="import_replace">جایگزینی و بازیابی</string>
     <string name="pdf_exported">فایل PDF ذخیره شد.</string>
+    <!-- Owner request of 2026-11-19: set markers, name catalogue, reorder mode, screen chrome. -->
+    <string name="set_type_reps_marker">R</string>
+    <string name="set_type_duration_marker">S</string>
+    <string name="exercise_name_hint">چند حرف از نام حرکت را بنویسید تا از فهرست انتخاب کنید.</string>
+    <string name="exercise_name_add_action">افزودن به فهرست حرکات</string>
+    <string name="exercise_name_added">نام حرکت به فهرست اضافه شد.</string>
+    <string name="exercise_name_no_results">حرکتی با این نام در فهرست نیست؛ می‌توانید آن را اضافه کنید.</string>
+    <string name="exercise_name_suggestions">پیشنهادهای فهرست حرکات</string>
+    <string name="reorder_mode">حالت جابه‌جایی</string>
+    <string name="reorder_mode_desc">برای تغییر ترتیب حرکات این گزینه را روشن کنید؛ پس از پایان، خاموشش کنید.</string>
+    <string name="reorder_mode_toggle">روشن یا خاموش کردن حالت جابه‌جایی</string>
+    <string name="reorder_mode_off_hint">برای تغییر ترتیب حرکات، حالت جابه‌جایی را روشن کنید.</string>
+    <string name="reorder_mode_on_hint">حالت جابه‌جایی روشن است: دستگیرهٔ هر کارت را بکشید تا ترتیب عوض شود.</string>
+    <string name="exercise_number">حرکت %1$s</string>
+    <string name="exercise_number_desc">شمارهٔ حرکت %1$s</string>
+    <string name="exercise_reorder_earlier">انتقال این حرکت به قبل</string>
+    <string name="exercise_reorder_later">انتقال این حرکت به بعد</string>
+    <string name="program_name_unset">برنامه بدون نام</string>
+    <string name="program_name_prompt">برای این برنامه یک نام انتخاب کنید تا ذخیره شود.</string>
+    <string name="save_program_name">ذخیرهٔ نام برنامه</string>
+    <string name="open_day">باز کردن روز تمرین</string>
+    <string name="delete_exercise_action">حذف این حرکت</string>
+    <string name="delete_day_action">حذف این روز تمرین</string>
+    <string name="delete_program_action">حذف این برنامه</string>
+    <string name="day_not_found">روز تمرین پیدا نشد.</string>
+    <string name="delete_program_hint">حذف برنامه با دکمهٔ تمام‌عرض در انتهای همین صفحه انجام می‌شود.</string>
 </resources>

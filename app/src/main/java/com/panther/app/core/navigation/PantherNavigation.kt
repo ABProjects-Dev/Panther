@@ -32,7 +32,11 @@ import com.panther.app.feature.ProgramEditorScreen
 import com.panther.app.feature.ProgramsScreen
 import com.panther.app.feature.ProgramsViewModel
 import com.panther.app.feature.SettingsScreen
+import com.panther.app.feature.TrainingDayScreen
 import com.panther.app.feature.SettingsViewModel
+
+private const val EDITOR_ROUTE = "editor/{id}"
+private const val DAY_ROUTE = "day/{programId}/{dayId}"
 
 private data class MainDestination(val route: String, val label: Int, val icon: ImageVector)
 
@@ -58,7 +62,7 @@ fun PantherNavigation(
                 destinations.forEach { destination ->
                     val isRootRoute = route == destination.route
                     val isSelected = isRootRoute ||
-                        (destination.route == "programs" && route == "editor/{id}") ||
+                        (destination.route == "programs" && (route == EDITOR_ROUTE || route == DAY_ROUTE)) ||
                         (destination.route == "profile" && route == "settings")
                     NavigationBarItem(
                         selected = isSelected,
@@ -66,7 +70,7 @@ fun PantherNavigation(
                             val currentRoute = navController.currentBackStackEntry?.destination?.route
                             val currentlyRoot = currentRoute == destination.route
                             val currentlySelected = currentlyRoot ||
-                                (destination.route == "programs" && currentRoute == "editor/{id}") ||
+                                (destination.route == "programs" && (currentRoute == EDITOR_ROUTE || currentRoute == DAY_ROUTE)) ||
                                 (destination.route == "profile" && currentRoute == "settings")
                             if (currentlySelected && !currentlyRoot) {
                                 navController.popBackStack(destination.route, inclusive = false)
@@ -96,7 +100,11 @@ fun PantherNavigation(
             modifier = Modifier.padding(padding),
         ) {
             composable("home") {
-                HomeScreen(programs = programs, profile = profile)
+                HomeScreen(
+                    programs = programs,
+                    profile = profile,
+                    onOpenDay = { dayId, programId -> navController.navigate("day/$programId/$dayId") },
+                )
             }
             composable("programs") {
                 ProgramsScreen(
@@ -117,7 +125,7 @@ fun PantherNavigation(
                 )
             }
             composable(
-                route = "editor/{id}",
+                route = EDITOR_ROUTE,
                 arguments = listOf(navArgument("id") { type = NavType.LongType }),
             ) { backStack ->
                 ProgramEditorScreen(
@@ -127,6 +135,28 @@ fun PantherNavigation(
                     // instead of leaving an empty destination on the back stack.
                     programId = backStack.arguments?.getLong("id") ?: 0L,
                     onBack = { navController.popBackStack() },
+                    onOpenDay = { dayId, programId ->
+                        navController.navigate("day/$programId/$dayId")
+                    },
+                )
+            }
+            // Every training day has its own screen, reached from its card on the program page.
+            composable(
+                route = DAY_ROUTE,
+                arguments = listOf(
+                    navArgument("programId") { type = NavType.LongType },
+                    navArgument("dayId") { type = NavType.LongType },
+                ),
+            ) { backStack ->
+                TrainingDayScreen(
+                    viewModel = programs,
+                    programId = backStack.arguments?.getLong("programId") ?: 0L,
+                    dayId = backStack.arguments?.getLong("dayId") ?: 0L,
+                    onBack = { navController.popBackStack() },
+                    onDayDeleted = {
+                        // The day screen's only remaining destination is the program page.
+                        navController.popBackStack()
+                    },
                 )
             }
         }

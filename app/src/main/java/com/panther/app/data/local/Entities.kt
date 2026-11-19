@@ -22,6 +22,14 @@ data class ExerciseEntity(@PrimaryKey(autoGenerate = true) val id: Long = 0, val
 @Entity(tableName = "exercise_sets", foreignKeys = [ForeignKey(entity = ExerciseEntity::class, parentColumns = ["id"], childColumns = ["exerciseId"], onDelete = ForeignKey.CASCADE)], indices = [Index(value = ["exerciseId", "setNumber"], unique = true)])
 data class ExerciseSetEntity(@PrimaryKey(autoGenerate = true) val id: Long = 0, val exerciseId: Long, val setNumber: Int, val targetType: String, val targetValue: Int?, val targetMinutes: Int?, val targetSeconds: Int?)
 
+/**
+ * Device-only catalogue of exercise names. Added in schema version 2 and intentionally *not* part of
+ * the backup snapshot (owner decision 2026-11-19): it is a typing convenience, not user data.
+ * `nameKey` stores the normalized lowercase form so lookups are unique and case-insensitive.
+ */
+@Entity(tableName = "exercise_catalog", indices = [Index(value = ["nameKey"], unique = true)])
+data class ExerciseCatalogEntity(@PrimaryKey(autoGenerate = true) val id: Long = 0, val name: String, val nameKey: String, val createdAt: Long)
+
 data class ProgramSummaryRow(val id: Long, val name: String, val createdAt: Long, val isActive: Boolean, val dayCount: Int, val exerciseCount: Int)
 
 data class ExerciseWithSetsRow(

@@ -27,6 +27,15 @@ class RoomPantherRepository @Inject constructor(private val db: PantherDatabase)
         dao.insertProgram(WorkoutProgramEntity(name = name.trim(), createdAt = System.currentTimeMillis()))
     }
 
+    override suspend fun createPendingProgram(): Long = db.withTransaction {
+        // A placeholder name is stored so the row exists while the program page is open; it is
+        // replaced by the user's name, or the row is discarded on exit.
+        require(dao.programCount() < PantherBackup.MAX_PROGRAMS) { "Maximum number of programs reached" }
+        dao.insertProgram(
+            WorkoutProgramEntity(name = PENDING_PROGRAM_NAME, createdAt = System.currentTimeMillis()),
+        )
+    }
+
     override suspend fun renameProgram(id: Long, name: String) {
         require(WorkoutValidation.name(name))
         check(dao.renameProgram(id, name.trim()) == 1)
@@ -98,22 +107,35 @@ class RoomPantherRepository @Inject constructor(private val db: PantherDatabase)
         ids.forEachIndexed { index, id -> check(dao.orderDay(programId, id, index) == 1) }
     }
 
-    override suspend fun saveExercise(dayId: Long, exerciseId: Long?, name: String, order: Int, sets: List<ExerciseSet>) {
-        require(WorkoutValidation.name(name) && order >= 0)
+    override suspend fun saveExercise(
+        dayId: Long,
+        exerciseId: Long?,
+        name: String,
+        order: Int?,
+        sets: List<ExerciseSet>,
+    ) {
+        require(WorkoutValidation.name(name) && (order == null || order >= 0))
         require(sets.all { it.exerciseId == (exerciseId ?: 0L) } && WorkoutValidation.sets(sets))
         db.withTransaction {
             checkNotNull(dao.day(dayId))
             val id = if (exerciseId == null) {
                 val existingIds = dao.exerciseIdsOrdered(dayId)
                 require(existingIds.size < PantherBackup.MAX_EXERCISES_PER_DAY) { "Maximum number of exercises reached" }
-                existingIds.forEachIndexed { index, existingId -> dao.orderExercise(dayId, existingId, index) }
-                dao.insertExercise(ExerciseEntity(trainingDayId = dayId, name = name.trim(), sortOrder = existingIds.size))
+                val targetOrder = (order ?: existingIds.size).coerceIn(0, existingIds.size)
+                // Make room at `targetOrder` so the new exercise lands where the editor asked for it,
+                // then keep `sortOrder` dense (0..n-1) — the displayed number is `sortOrder + 1`.
+                existingIds.forEachIndexed { index, existingId ->
+                    val shifted = if (index >= targetOrder) index + 1 else index
+                    check(dao.orderExercise(dayId, existingId, shifted) == 1)
+                }
+                dao.insertExercise(ExerciseEntity(trainingDayId = dayId, name = name.trim(), sortOrder = targetOrder))
             } else {
                 val current = checkNotNull(dao.exercise(exerciseId))
                 require(current.trainingDayId == dayId) { "Exercise does not belong to day" }
                 check(dao.renameExercise(exerciseId, name.trim()) == 1)
                 exerciseId
             }
+            rememberCatalogEntry(name)
             dao.deleteSets(id)
             dao.insertSets(
                 sets.mapIndexed { index, set ->
@@ -142,6 +164,36 @@ class RoomPantherRepository @Inject constructor(private val db: PantherDatabase)
         val existing = dao.exerciseIdsOrdered(dayId)
         require(ids.size == existing.size && ids.toSet() == existing.toSet())
         ids.forEachIndexed { index, id -> check(dao.orderExercise(dayId, id, index) == 1) }
+    }
+
+    override fun observeExerciseNames() =
+        dao.exerciseCatalog().map { rows -> rows.map { it.name } }
+
+    override suspend fun exerciseNamesNow() = dao.exerciseCatalogNow().map { it.name }
+
+    override suspend fun rememberExerciseName(name: String) = db.withTransaction {
+        rememberCatalogEntry(name)
+        Unit
+    }
+
+    /**
+     * Adds [name] to the catalogue when it is new. Callers are responsible for the transaction.
+     * The catalogue is a convenience list, not a business record: an existing name is a no-op and
+     * reaching the cap must never fail the operation that triggered the write.
+     */
+    private suspend fun rememberCatalogEntry(name: String) {
+        val normalized = ExerciseNameCatalog.normalize(name)
+        if (normalized.isEmpty()) return
+        val key = normalized.lowercase()
+        if (dao.catalogName(key) != null) return
+        if (dao.exerciseCatalogCount() >= WorkoutDefaults.MAX_CATALOG_NAMES) return
+        dao.insertCatalogName(
+            ExerciseCatalogEntity(
+                name = normalized,
+                nameKey = key,
+                createdAt = System.currentTimeMillis(),
+            ),
+        )
     }
 
     override suspend fun createProgramBackup(programId: Long): ProgramBackup? = db.withTransaction {
@@ -214,6 +266,7 @@ class RoomPantherRepository @Inject constructor(private val db: PantherDatabase)
                                 sortOrder = exerciseIndex,
                             ),
                         )
+                        rememberCatalogEntry(exercise.name)
                         dao.insertSets(
                             exercise.sets.sortedBy { it.setNumber }.mapIndexed { setIndex, set ->
                                 ExerciseSetEntity(

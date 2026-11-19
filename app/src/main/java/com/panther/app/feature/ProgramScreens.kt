@@ -9,13 +9,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -31,13 +29,23 @@ import com.panther.app.core.format.PantherDateFormat
 import com.panther.app.domain.model.*
 import kotlinx.coroutines.delay
 
+/**
+ * Placeholder stored while a new program has no name yet. It is what the editor treats as "empty",
+ * and a program that still carries it when the user leaves is deleted instead of saved.
+ */
+internal const val PENDING_PROGRAM_NAME = "—"
+
 @Composable
 private fun ErrorNotice(error: Boolean) {
     if (error) Text(stringResource(R.string.error_generic), color = MaterialTheme.colorScheme.error)
 }
 
 @Composable
-fun HomeScreen(programs: ProgramsViewModel, profile: ProfileViewModel) {
+fun HomeScreen(
+    programs: ProgramsViewModel,
+    profile: ProfileViewModel,
+    onOpenDay: (dayId: Long, programId: Long) -> Unit,
+) {
     val programState by programs.programs.collectAsStateWithLifecycle()
     val profileState by profile.profile.collectAsStateWithLifecycle()
     val user = profileState.value
@@ -86,6 +94,7 @@ fun HomeScreen(programs: ProgramsViewModel, profile: ProfileViewModel) {
                     ReadOnlyActiveProgramSection(
                         program = activeProgram,
                         viewModel = programs,
+                        onOpenDay = onOpenDay,
                     )
                 }
             }
@@ -175,21 +184,12 @@ private fun formatDecimalTrimmed(value: Double): String =
 private fun ReadOnlyActiveProgramSection(
     program: WorkoutProgram,
     viewModel: ProgramsViewModel,
+    onOpenDay: (dayId: Long, programId: Long) -> Unit,
 ) {
     val activeColors = LocalPantherColors.current
     val daysFlow = remember(program.id) { viewModel.days(program.id) }
     val daysState by daysFlow.collectAsStateWithLifecycle(initialValue = DataState(emptyList(), loading = true))
     val daysList = daysState.value
-    var selectedDayId by rememberSaveable(program.id) { mutableStateOf<Long?>(null) }
-    val selectedIndex = remember(daysList, selectedDayId) {
-        val idx = daysList.indexOfFirst { it.id == selectedDayId }
-        if (idx >= 0) idx else 0
-    }
-    LaunchedEffect(daysList, selectedIndex) {
-        if (daysList.isNotEmpty()) {
-            selectedDayId = daysList[selectedIndex].id
-        }
-    }
 
     PantherCard(
         containerColor = activeColors.activeGreenContainer,
@@ -235,91 +235,18 @@ private fun ReadOnlyActiveProgramSection(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         } else {
-            ScrollableTabRow(
-                selectedTabIndex = selectedIndex,
-                edgePadding = 0.dp,
-                containerColor = Color.Transparent,
-                contentColor = activeColors.activeGreen,
-                indicator = { tabPositions ->
-                    if (selectedIndex in tabPositions.indices) {
-                        TabRowDefaults.SecondaryIndicator(
-                            modifier = Modifier.tabIndicatorOffset(tabPositions[selectedIndex]),
-                            color = activeColors.activeGreen,
+            // Each training day is its own card and opens its own screen, exactly like the program.
+            Column(verticalArrangement = Arrangement.spacedBy(PantherSpacing.small)) {
+                daysList.forEachIndexed { index, day ->
+                    key(day.id) {
+                        TrainingDayCard(
+                            index = index,
+                            day = day,
+                            isProgramActive = true,
+                            onOpen = { onOpenDay(day.id, program.id) },
                         )
                     }
-                },
-                divider = {
-                    HorizontalDivider(color = activeColors.activeGreen.copy(alpha = 0.25f))
-                },
-            ) {
-                daysList.forEachIndexed { index, day ->
-                    Tab(
-                        selected = selectedIndex == index,
-                        onClick = { selectedDayId = day.id },
-                        selectedContentColor = activeColors.activeGreen,
-                        unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        text = {
-                            Text(
-                                text = day.name,
-                                fontWeight = if (selectedIndex == index) FontWeight.Bold else FontWeight.Medium,
-                            )
-                        },
-                    )
                 }
-            }
-            Spacer(Modifier.height(PantherSpacing.compact))
-            val currentDay = daysList[selectedIndex]
-            key(currentDay.id) {
-                ReadOnlyTrainingDayExercises(day = currentDay, viewModel = viewModel)
-            }
-        }
-    }
-}
-
-@Composable
-private fun ReadOnlyTrainingDayExercises(day: TrainingDay, viewModel: ProgramsViewModel) {
-    val exercisesFlow = remember(day.id) { viewModel.exercisesWithSets(day.id) }
-    val exercisesState by exercisesFlow.collectAsStateWithLifecycle(initialValue = DataState(emptyList(), loading = true))
-    if (exercisesState.loading) {
-        Text(stringResource(R.string.loading), style = MaterialTheme.typography.bodySmall)
-    } else if (exercisesState.value.isEmpty()) {
-        Text(
-            text = stringResource(R.string.no_exercises_in_day),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    } else {
-        Column(verticalArrangement = Arrangement.spacedBy(PantherSpacing.small)) {
-            exercisesState.value.forEach { item ->
-                key(item.exercise.id) {
-                    ReadOnlyExerciseItem(item = item)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ReadOnlyExerciseItem(item: ExerciseWithSets) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.small,
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
-        border = BorderStroke(1.dp, LocalPantherColors.current.activeGreen.copy(alpha = 0.25f)),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(PantherSpacing.compact),
-            verticalArrangement = Arrangement.spacedBy(PantherSpacing.small),
-        ) {
-            Text(
-                text = item.exercise.name,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            if (item.sets.isNotEmpty()) {
-                ExerciseSetsSquares(sets = item.sets, highlightGreen = true)
             }
         }
     }
@@ -332,8 +259,10 @@ fun ProgramsScreen(
 ) {
     val state by viewModel.programs.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
-    var showCreateDialog by rememberSaveable { mutableStateOf(false) }
-    var newProgramName by rememberSaveable { mutableStateOf("") }
+    // Creating a program no longer asks for a name here: it opens the room (the program page) and
+    // the name is chosen there. A program whose name was never chosen is discarded on exit (task 5).
+    var pendingProgramId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var pendingFailed by rememberSaveable { mutableStateOf(false) }
     val canCreateProgram = state.value.size < PantherBackup.MAX_PROGRAMS
 
     LaunchedEffect(error) {
@@ -343,49 +272,17 @@ fun ProgramsScreen(
         }
     }
 
-    if (showCreateDialog) {
-        var invalid by rememberSaveable { mutableStateOf(false) }
-        AlertDialog(
-            onDismissRequest = { showCreateDialog = false },
-            title = { Text(stringResource(R.string.new_program)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(PantherSpacing.extraSmall)) {
-                    PantherTextField(
-                        value = newProgramName,
-                        onValueChange = { newProgramName = it; invalid = false },
-                        label = stringResource(R.string.program_name),
-                        modifier = Modifier.fillMaxWidth(),
-                        isError = invalid,
-                    )
-                    if (invalid) {
-                        Text(
-                            text = stringResource(R.string.error_name),
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        if (!WorkoutValidation.name(newProgramName)) {
-                            invalid = true
-                        } else {
-                            viewModel.create(newProgramName)
-                            showCreateDialog = false
-                        }
-                    },
-                ) {
-                    Text(stringResource(R.string.save))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showCreateDialog = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            },
-        )
+    LaunchedEffect(pendingProgramId, state.value, state.loading, state.error) {
+        val target = pendingProgramId ?: return@LaunchedEffect
+        if (state.value.any { it.id == target }) {
+            pendingProgramId = null
+            onDetails(target)
+        } else if (!state.loading && !state.error) {
+            // Loaded without the new row: the insert failed. Clear the placeholder instead of
+            // leaving the button stuck in a "creating" state.
+            pendingProgramId = null
+            pendingFailed = true
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -406,7 +303,7 @@ fun ProgramsScreen(
             if (state.loading) {
                 item { Text(stringResource(R.string.loading)) }
             }
-            if (state.error || error) {
+            if (state.error || error || pendingFailed) {
                 item { ErrorNotice(true) }
             }
             if (!canCreateProgram) {
@@ -440,8 +337,10 @@ fun ProgramsScreen(
         if (canCreateProgram) {
             ExtendedFloatingActionButton(
                 onClick = {
-                    newProgramName = ""
-                    showCreateDialog = true
+                    pendingFailed = false
+                    // Placeholder name, replaced by the user on the program page. It is never kept
+                    // if the user leaves without choosing one.
+                    viewModel.createPendingProgram { createdId -> pendingProgramId = createdId }
                 },
                 modifier = Modifier
                     .align(AbsoluteAlignment.BottomLeft)
@@ -500,7 +399,11 @@ private fun CompactProgramCard(
                     horizontalArrangement = Arrangement.spacedBy(PantherSpacing.small),
                 ) {
                     Text(
-                        text = program.name,
+                        text = if (program.name == PENDING_PROGRAM_NAME) {
+                            stringResource(R.string.program_name_unset)
+                        } else {
+                            program.name
+                        },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
