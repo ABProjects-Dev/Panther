@@ -31,7 +31,7 @@ which replaced the numbered-rule document; project-specific rules now live in `A
 | item | owner | expected | blocker |
 |---|---|---|---|
 | ~~Unreleased editor change set (ten owner-requested items, `ADR-0003`)~~ — **merged 2026-11-19** as PR #41 (`b88fb53`) | agent on the session branch | done | — |
-| Panther-photo app icon (`ADR-0004`) | agent on the session branch | owner review | resource-only change: not compiled in the sandbox (no JDK/Android SDK), so the first `lintDebug`/`assembleDebug` happens in CI |
+| Panther-photo app icon (`ADR-0004`) | agent on the session branch | owner review of PR #42 | CI is green and the APK builds; waiting for the owner's visual sign-off on a device |
 | Room schema cleanup and build-toolchain upgrade | owner / agent on a workstation | next minor cycle | needs a machine with a JDK and the Android SDK; a schema or toolchain change cannot be built or diagnosed in the agent sandbox |
 
 ## Confirmed defects
@@ -77,7 +77,7 @@ which replaced the numbered-rule document; project-specific rules now live in `A
 | check | last run | result |
 |---|---|---|
 | Unreleased editor change set (2026-11-19) | 2026-11-19 | **CI green on PR #41** (`4c8f8f2`): unit tests 70/70, instrumentation 20/20, `lintDebug` 0 blocking issues (18 total), debug APK built, `AGENTS.md` guard passed. Not built locally — the sandbox has no JDK/Android SDK |
-| Panther-photo app icon (2026-11-19) | 2026-11-19 | **not built**: resource assets only, rendered and reviewed offline at every density (108–432 px layers, 48–192 px legacy icons); safe-zone clearance measured at ~24% of the 66 dp mask radius. `lintDebug` and the APK build run in CI on the pull request |
+| Panther-photo app icon (2026-11-19) | 2026-11-19 | **CI green on PR #42** (run `44553937401`): debug and androidTest APKs built, `lintDebug` 0 blocking issues (24 total, up from 18 — the new icon PNGs add non-blocking suggestions whose report could not be downloaded from this sandbox), unit tests 70/70, instrumentation 20/20, `AGENTS.md` guard passed. Assets were also rendered and reviewed offline at every density (108–432 px adaptive layers, 48–192 px legacy icons) before the run; safe-zone clearance measured at ~24 % of the 66 dp mask radius |
 | `app/schemas/…/2.json` | 2026-11-19 | hand-written from `1.json` plus the new `exercise_catalog` entity. CI's *Verify Room schema baseline* step passed on a clean build and `MigrationTestHelper` validated the v1→v2 upgrade against it, so the file matches what Room generates. The `identityHash` value itself could not be read back from the run: artifact and log downloads are blocked from this sandbox |
 | New unit tests (`ExerciseNameCatalogTest`, extended `ProgramsViewModelTest`) | 2026-11-19 | executed by CI: 70 unit tests, 0 failures. Two earlier red runs were real defects (compile errors, then a fake-repository gap) and are fixed in `a04fbc7` and `4c8f8f2` |
 | New instrumented tests (migration 1→2, catalogue, insert order) | 2026-11-19 | executed by CI on the API 29 emulator: 20 tests, 0 failures |
