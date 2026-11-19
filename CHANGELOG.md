@@ -1,6 +1,6 @@
 # Panther Project Changelog
 
-## [Unreleased]
+## [v1.3.0] - 2026-11-19
 
 ### Added
 - Device-only exercise-name catalogue (`exercise_catalog`, Room schema v2 with the additive
@@ -37,6 +37,11 @@
 ### Fixed
 - Moving a day earlier/later used left/right chevrons in a vertical list; the controls are now up/down
   arrows, matching the direction of the movement.
+
+Program-editor overhaul and a new visual identity: one screen per training day, a device-only
+exercise-name catalogue, opt-in reordering, and the owner-supplied panther artwork as the
+application icon. Tagged on `main` with a Persian annotated description and published directly
+as `Panther V1.3.0.apk`.
 
 ## [v1.2.0] - 2026-11-11
 

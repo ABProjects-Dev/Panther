@@ -1,14 +1,15 @@
 # Project status — Panther
 
-Updated: 2026-11-19 · Version: `v1.2.0` (released) + merged editor work (PR #41) and the unreleased panther-photo icon · Baseline: `AGENTS.md` 1.0.0
+Updated: 2026-11-19 · Version: `v1.3.0` (release documentation finalized, tag pending) · Baseline: `AGENTS.md` 1.0.0
 Template: `AGENTS.md` §29.3 · Dated claims only (`[DOC-06]`).
 
 ## Current state
 
 Panther is an offline-first Android application for planning bodybuilding workout routines, with a
-Persian RTL interface, Vazirmatn typography and Jalali dates. `v1.1.0` is the latest published
-release; `v1.2.0` is tagged from `main` after the audit-remediation set (PR #39, merge `a830943`) was
-merged. The project adopted the *Agent Operating Baseline* (`AGENTS.md` 1.0.0) in commit `7775485`,
+Persian RTL interface, Vazirmatn typography and Jalali dates. `v1.2.0` is the latest published
+release; the editor overhaul (PR #41, merge `b88fb53`) and the panther-artwork icon (PR #42, merge
+`6e4711d`) are merged on `main` and ship in `v1.3.0`, whose documentation is finalized here. The
+project adopted the *Agent Operating Baseline* (`AGENTS.md` 1.0.0) in commit `7775485`,
 which replaced the numbered-rule document; project-specific rules now live in `AGENTS.project.md`.
 
 ## Completed
@@ -24,14 +25,16 @@ which replaced the numbered-rule document; project-specific rules now live in `A
   20 instrumented tests, 0 blocking lint issues).
 - 2026-11-19 — application icon replaced by the owner-supplied panther photograph across the adaptive
   icon, legacy and round launcher rasters, themed (monochrome) layer and the in-app brand mark
-  (`ADR-0004`).
+  (`ADR-0004`); merged as PR #42 (`6e4711d`).
+- 2026-11-19 — `v1.3.0` release documentation finalized (`CHANGELOG.md`, `RELEASES.md`, status and plan
+  documents); the tag is created from `main` once the owner-approved merge lands.
 
 ## In progress
 
 | item | owner | expected | blocker |
 |---|---|---|---|
 | ~~Unreleased editor change set (ten owner-requested items, `ADR-0003`)~~ — **merged 2026-11-19** as PR #41 (`b88fb53`) | agent on the session branch | done | — |
-| Panther-photo app icon (`ADR-0004`) | agent on the session branch | owner review of PR #42 | CI is green and the APK builds; waiting for the owner's visual sign-off on a device |
+| `v1.3.0` release (tag + publication) | owner | after the documentation merge | `release.yml` publishes from the tag; no manual local build exists |
 | Room schema cleanup and build-toolchain upgrade | owner / agent on a workstation | next minor cycle | needs a machine with a JDK and the Android SDK; a schema or toolchain change cannot be built or diagnosed in the agent sandbox |
 
 ## Confirmed defects

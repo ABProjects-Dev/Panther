@@ -5,6 +5,15 @@ Releases are managed via GitHub Actions (`release.yml`) and tagged with Semantic
 asks for English — was decided by the owner on 2026-11-11 in favour of Persian, so the deviation is
 recorded here rather than pending.
 
+### v1.3.0
+- **Date**: 2026-11-19
+- **Tag**: `v1.3.0` (annotated in Persian)
+- **Workflow Artifact**: `panther-official-release-v1.3.0`
+- **Release Assets**: built, verified (`aapt2` badging, `apksigner` v2/v3) and published by `release.yml` from the tagged commit as `Panther V1.3.0.apk` and `Panther V1.3.0.apk.sha256`
+- **Notes**: One screen per training day (`day/{programId}/{dayId}`) with its own card on the program and home pages; a device-only exercise-name catalogue (`exercise_catalog`, Room schema v2 with `MIGRATION_1_2`, excluded from backups); program creation opens an empty room and asks for the name on the program page; numbered exercises derived from the persisted order with `saveExercise(order = …)` inserting in place; reorder mode off by default behind a toggle; square set editor with an `R`/`S` marker and 12 default repetitions; icon-only back action at the RTL top end of every nested page; full-width page-level delete actions; up/down day-movement controls; and the owner-supplied panther artwork as the adaptive, legacy, round, themed and in-app icon (`ADR-0004`).
+- **Signature**: Signed and verified with `apksigner` (APK Signature Scheme v2/v3) in `release.yml` via GitHub Secrets (`[SEC-07]`).
+- **Status**: Published directly on GitHub Releases (`draft: false`) by `release.yml` once the tag is pushed.
+
 ### v1.2.0
 - **Date**: 2026-11-11
 - **Tag**: `v1.2.0` (annotated in Persian)
