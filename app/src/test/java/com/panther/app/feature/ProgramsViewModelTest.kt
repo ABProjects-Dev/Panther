@@ -147,7 +147,10 @@ class ProgramsViewModelTest {
         viewModel.rememberExerciseName("پرس سینه")
         viewModel.rememberExerciseName("پرس سینه")
 
-        assertEquals(listOf("اسکوات", "پرس سینه"), viewModel.exerciseNames.first())
+        assertEquals(
+            listOf("اسکوات", "پرس سینه"),
+            viewModel.exerciseNames.first { it.isNotEmpty() },
+        )
     }
 
     private fun repSets(reps: Int) = listOf(
@@ -339,6 +342,7 @@ private class FakePantherRepository : PantherRepository {
         setsFlow.value = setsFlow.value.filterNot { it.exerciseId == id } + sets.mapIndexed { idx, s ->
             s.copy(id = nextId++, exerciseId = id, setNumber = idx + 1)
         }
+        rememberExerciseName(name)
         recount(day.programId)
     }
 
