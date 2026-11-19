@@ -1,6 +1,6 @@
 # Project status — Panther
 
-Updated: 2026-11-19 · Version: `v1.2.0` (released) + unreleased editor work · Baseline: `AGENTS.md` 1.0.0
+Updated: 2026-11-19 · Version: `v1.2.0` (released) + merged editor work (PR #41) and the unreleased panther-photo icon · Baseline: `AGENTS.md` 1.0.0
 Template: `AGENTS.md` §29.3 · Dated claims only (`[DOC-06]`).
 
 ## Current state
@@ -20,12 +20,18 @@ which replaced the numbered-rule document; project-specific rules now live in `A
   restore snapshot, atomic exports, duplicate-release guard, string-resource duration labels,
   `editor/{id}` not-found screen, 57 + 16 tests, JaCoCo coverage and CI build annotations.
 - 2026-11-11 — `v1.2.0` release documentation finalized; `PD-002` decided in favour of Persian.
+- 2026-11-19 — editor change set merged as PR #41 (`b88fb53`); CI green on `4c8f8f2` (70 unit tests,
+  20 instrumented tests, 0 blocking lint issues).
+- 2026-11-19 — application icon replaced by the owner-supplied panther photograph across the adaptive
+  icon, legacy and round launcher rasters, themed (monochrome) layer and the in-app brand mark
+  (`ADR-0004`).
 
 ## In progress
 
 | item | owner | expected | blocker |
 |---|---|---|---|
-| Unreleased editor change set (ten owner-requested items, `ADR-0003`) | agent on the session branch | owner review | **not compiled or tested**: the sandbox has no JDK and no Android SDK, so `2.json`'s identity hash is a placeholder until a real Room build regenerates it |
+| ~~Unreleased editor change set (ten owner-requested items, `ADR-0003`)~~ — **merged 2026-11-19** as PR #41 (`b88fb53`) | agent on the session branch | done | — |
+| Panther-photo app icon (`ADR-0004`) | agent on the session branch | owner review | resource-only change: not compiled in the sandbox (no JDK/Android SDK), so the first `lintDebug`/`assembleDebug` happens in CI |
 | Room schema cleanup and build-toolchain upgrade | owner / agent on a workstation | next minor cycle | needs a machine with a JDK and the Android SDK; a schema or toolchain change cannot be built or diagnosed in the agent sandbox |
 
 ## Confirmed defects
@@ -71,6 +77,7 @@ which replaced the numbered-rule document; project-specific rules now live in `A
 | check | last run | result |
 |---|---|---|
 | Unreleased editor change set (2026-11-19) | 2026-11-19 | **CI green on PR #41** (`4c8f8f2`): unit tests 70/70, instrumentation 20/20, `lintDebug` 0 blocking issues (18 total), debug APK built, `AGENTS.md` guard passed. Not built locally — the sandbox has no JDK/Android SDK |
+| Panther-photo app icon (2026-11-19) | 2026-11-19 | **not built**: resource assets only, rendered and reviewed offline at every density (108–432 px layers, 48–192 px legacy icons); safe-zone clearance measured at ~24% of the 66 dp mask radius. `lintDebug` and the APK build run in CI on the pull request |
 | `app/schemas/…/2.json` | 2026-11-19 | hand-written from `1.json` plus the new `exercise_catalog` entity. CI's *Verify Room schema baseline* step passed on a clean build and `MigrationTestHelper` validated the v1→v2 upgrade against it, so the file matches what Room generates. The `identityHash` value itself could not be read back from the run: artifact and log downloads are blocked from this sandbox |
 | New unit tests (`ExerciseNameCatalogTest`, extended `ProgramsViewModelTest`) | 2026-11-19 | executed by CI: 70 unit tests, 0 failures. Two earlier red runs were real defects (compile errors, then a fake-repository gap) and are fixed in `a04fbc7` and `4c8f8f2` |
 | New instrumented tests (migration 1→2, catalogue, insert order) | 2026-11-19 | executed by CI on the API 29 emulator: 20 tests, 0 failures |
@@ -94,7 +101,8 @@ which replaced the numbered-rule document; project-specific rules now live in `A
 
 ## Handoff notes
 
-- The unreleased editor work follows `docs/decisions/ADR-0003-exercise-catalogue-and-program-flow.md`; the owner's four answers of 2026-11-19 are recorded there.
+- The editor work merged as PR #41 follows `docs/decisions/ADR-0003-exercise-catalogue-and-program-flow.md`; the owner's four answers of 2026-11-19 are recorded there.
+- The icon set follows `docs/decisions/ADR-0004-panther-photo-app-icon.md`: one photograph, `60/108` of the adaptive canvas, feathered edge, solid `#010202` background, per-density rasters. Regenerate from the source image; do not paste a trimmed rectangle on a different colour.
 
 
 - `AGENTS.md` is protected and read-only (`[PROT-01]`); never edit, reformat or regenerate it, and never

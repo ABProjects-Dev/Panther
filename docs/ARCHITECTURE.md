@@ -44,6 +44,12 @@ See [docs/GITHUB_ACTIONS.md](GITHUB_ACTIONS.md) for full pipeline details.
 - **Reordering**: disabled by default. `PantherReorderToggle` on the day screen enables the drag handles and the move actions; `RoomPantherRepository.saveExercise(order = …)` inserts at a position and shifts the following exercises down.
 - **Exercise-name catalogue**: `exercise_catalog` is device-only (`name`, normalized lowercase `nameKey`, `createdAt`) and is deliberately excluded from `PantherBackup`; the name field filters it as the user types and offers an inline "add" action for a new name.
 
+## Brand assets
+- One source photograph (owner-supplied panther artwork) renders every icon variant; `ADR-0004` records the sizes and the safe-zone rule.
+- `<adaptive-icon>` files in `res/mipmap-anydpi-v26/` reference `@drawable/ic_launcher_background` (solid `#010202` vector), `@drawable/ic_launcher_foreground` (per-density `drawable-*dpi` PNG, artwork at 60 of the 108 dp canvas) and `@drawable/ic_launcher_monochrome` (per-density PNG whose alpha is the photo's luminance for themed icons).
+- `res/mipmap-*dpi/ic_launcher.png` and `ic_launcher_round.png` are the legacy pre-API-26 rasters (artwork at 84 of 108; the round one is circular-masked).
+- `res/drawable-*dpi/ic_panther_logo.png` is the in-app brand mark drawn by `PantherBrandHeader` (`28 dp`) — it has no vector counterpart.
+
 ## Repository layout notes
 - `docs/decisions/` holds one ADR per consequential decision (`ADR-NNNN-<slug>.md`).
 - `app/src/main/assets/licenses/` carries the verbatim third-party licence texts shipped inside the APK.

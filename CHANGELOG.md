@@ -16,6 +16,11 @@
 - Full-width delete actions at the end of the program and day pages, each behind a confirmation step.
 
 ### Changed
+- The application icon is now the owner-supplied panther artwork (dark background, glowing green
+  eyes) instead of the dumbbell glyph: adaptive foreground, legacy and round launcher rasters for
+  every density, the themed (monochrome) layer and the in-app brand mark in `PantherBrandHeader` all
+  come from one source image. The artwork occupies 60 of the 108 dp adaptive canvas so ears, whiskers
+  and jaw stay inside the 66 dp safe circle under every launcher mask. See `ADR-0004`.
 - New exercises pre-fill 12 repetitions instead of 10.
 - Each set is edited as a small square with a set-number badge at its top-start corner and an `R`
   (repetitions) or `S` (duration) marker instead of a full-width text field.
